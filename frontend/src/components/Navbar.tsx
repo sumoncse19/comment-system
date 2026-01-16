@@ -15,7 +15,7 @@ const Navbar = () => {
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2 font-semibold text-xl hover:opacity-80 transition-opacity">
           <div className="p-2 bg-primary rounded-lg">
             <MessageSquare className="h-5 w-5 text-primary-foreground" />
