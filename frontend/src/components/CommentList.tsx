@@ -355,6 +355,7 @@ const CommentList = ({ pageId }: CommentListProps) => {
                 onUpdate={handleUpdate}
                 onDelete={handleDelete}
                 onReply={handleReply}
+                depth={0}
               />
             ))}
           </div>

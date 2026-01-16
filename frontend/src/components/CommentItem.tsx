@@ -14,7 +14,7 @@ interface CommentItemProps {
   onUpdate: (id: string, content: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReply: (parentId: string, content: string) => Promise<void>;
-  isReply?: boolean;
+  depth?: number;
 }
 
 const CommentItem = ({
@@ -24,7 +24,7 @@ const CommentItem = ({
   onUpdate,
   onDelete,
   onReply,
-  isReply = false,
+  depth = 0,
 }: CommentItemProps) => {
   const { user, isAuthenticated } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -32,6 +32,7 @@ const CommentItem = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const isOwner = user?._id === comment.author._id;
+  const canReply = depth < 2;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -73,7 +74,7 @@ const CommentItem = ({
   };
 
   return (
-    <Card className={`${isReply ? 'ml-8 border-l-2 border-l-primary bg-secondary/20' : ''} transition-all`}>
+    <Card className={`${depth > 0 ? 'ml-8 border-l-2 border-l-primary bg-secondary/20' : ''} transition-all`}>
       <div className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-start gap-3">
@@ -169,7 +170,7 @@ const CommentItem = ({
                 </Button>
               </div>
 
-              {!isReply && isAuthenticated && (
+              {canReply && isAuthenticated && (
                 <Button
                   onClick={() => setIsReplying(!isReplying)}
                   variant="ghost"
@@ -209,7 +210,7 @@ const CommentItem = ({
               onUpdate={onUpdate}
               onDelete={onDelete}
               onReply={onReply}
-              isReply
+              depth={depth + 1}
             />
           ))}
         </div>

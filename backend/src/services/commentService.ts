@@ -22,18 +22,40 @@ interface CommentLean {
   updatedAt: Date;
 }
 
-// Reply with reaction (no nested replies)
-interface ReplyWithReaction extends Omit<CommentLean, 'replies'> {
-  userReaction: 'like' | 'dislike' | null;
-}
-
-// Top-level comment with reaction
+// Comment with reaction (supports nested replies)
 interface CommentWithReaction extends Omit<CommentLean, 'replies'> {
   userReaction: 'like' | 'dislike' | null;
-  replies?: ReplyWithReaction[];
+  replies?: CommentWithReaction[];
 }
 
 class CommentService {
+  // Helper method to calculate comment depth
+  private async calculateCommentDepth(commentId: string): Promise<number> {
+    let depth = 0;
+    let currentId: string | undefined | null = commentId;
+
+    while (currentId) {
+      const comment: { parentComment?: mongoose.Types.ObjectId | null } | null =
+        await Comment.findById(currentId).select('parentComment').lean();
+      if (!comment || !comment.parentComment) {
+        break;
+      }
+      depth++;
+      currentId = comment.parentComment.toString();
+    }
+
+    return depth;
+  }
+
+  // Helper method to recursively add user reactions to comments
+  private addUserReaction(comment: CommentLean, userId?: string): CommentWithReaction {
+    return {
+      ...comment,
+      userReaction: userId ? this.getUserReaction(comment, userId) : null,
+      replies: comment.replies?.map((reply) => this.addUserReaction(reply, userId)),
+    };
+  }
+
   // Create a new comment
   async createComment(
     data: CreateCommentInput,
@@ -41,15 +63,20 @@ class CommentService {
   ): Promise<IComment> {
     const { content, pageId, parentComment } = data;
 
-    // If it's a reply, verify parent comment exists
+    // If it's a reply, verify parent comment exists and check depth
     if (parentComment) {
       const parent = await Comment.findById(parentComment);
       if (!parent) {
         throw ApiError.notFound('Parent comment not found');
       }
-      // Don't allow nested replies (only 1 level deep)
-      if (parent.parentComment) {
-        throw ApiError.badRequest('Cannot reply to a reply');
+
+      // Calculate the depth of the parent comment
+      const parentDepth = await this.calculateCommentDepth(parentComment);
+
+      // Allow replies up to 3 layers deep (0, 1, 2)
+      // Parent at depth 2 cannot have replies
+      if (parentDepth >= 2) {
+        throw ApiError.badRequest('Maximum reply depth reached. Cannot reply beyond 3 layers.');
       }
     }
 
@@ -116,7 +143,7 @@ class CommentService {
     const totalPages = Math.ceil(totalItems / limit);
     const skip = (page - 1) * limit;
 
-    // Get comments
+    // Get comments with nested replies (up to 3 levels)
     const comments = await Comment.find(filter)
       .sort(sortOption)
       .skip(skip)
@@ -124,20 +151,29 @@ class CommentService {
       .populate('author', 'username avatar')
       .populate({
         path: 'replies',
-        populate: { path: 'author', select: 'username avatar' },
+        populate: [
+          { path: 'author', select: 'username avatar' },
+          {
+            path: 'replies',
+            populate: [
+              { path: 'author', select: 'username avatar' },
+              {
+                path: 'replies',
+                populate: { path: 'author', select: 'username avatar' },
+                options: { sort: { createdAt: 1 } },
+              },
+            ],
+            options: { sort: { createdAt: 1 } },
+          },
+        ],
         options: { sort: { createdAt: 1 } },
       })
       .lean<CommentLean[]>();
 
-    // Add user reaction to each comment
-    const commentsWithReaction: CommentWithReaction[] = comments.map((comment) => ({
-      ...comment,
-      userReaction: userId ? this.getUserReaction(comment, userId) : null,
-      replies: comment.replies?.map((reply) => ({
-        ...reply,
-        userReaction: userId ? this.getUserReaction(reply, userId) : null,
-      })),
-    }));
+    // Add user reaction to each comment recursively
+    const commentsWithReaction: CommentWithReaction[] = comments.map((comment) =>
+      this.addUserReaction(comment, userId)
+    );
 
     const pagination: PaginationMeta = {
       currentPage: page,
@@ -157,7 +193,21 @@ class CommentService {
       .populate('author', 'username avatar')
       .populate({
         path: 'replies',
-        populate: { path: 'author', select: 'username avatar' },
+        populate: [
+          { path: 'author', select: 'username avatar' },
+          {
+            path: 'replies',
+            populate: [
+              { path: 'author', select: 'username avatar' },
+              {
+                path: 'replies',
+                populate: { path: 'author', select: 'username avatar' },
+                options: { sort: { createdAt: 1 } },
+              },
+            ],
+            options: { sort: { createdAt: 1 } },
+          },
+        ],
         options: { sort: { createdAt: 1 } },
       })
       .lean<CommentLean>();
@@ -166,14 +216,8 @@ class CommentService {
       throw ApiError.notFound('Comment not found');
     }
 
-    return {
-      ...comment,
-      userReaction: userId ? this.getUserReaction(comment, userId) : null,
-      replies: comment.replies?.map((reply) => ({
-        ...reply,
-        userReaction: userId ? this.getUserReaction(reply, userId) : null,
-      })),
-    };
+    // Recursively add user reactions
+    return this.addUserReaction(comment, userId);
   }
 
   // Update a comment
@@ -207,6 +251,22 @@ class CommentService {
     return comment;
   }
 
+  // Recursively delete a comment and all its nested replies
+  private async recursivelyDeleteComments(commentId: string): Promise<void> {
+    const comment = await Comment.findById(commentId).select('replies');
+    if (!comment) return;
+
+    // Recursively delete all replies
+    if (comment.replies && comment.replies.length > 0) {
+      for (const replyId of comment.replies) {
+        await this.recursivelyDeleteComments(replyId.toString());
+      }
+    }
+
+    // Delete the comment itself
+    await Comment.findByIdAndDelete(commentId);
+  }
+
   // Delete a comment
   async deleteComment(commentId: string, userId: string): Promise<void> {
     const comment = await Comment.findById(commentId);
@@ -220,20 +280,18 @@ class CommentService {
       throw ApiError.forbidden('You can only delete your own comments');
     }
 
-    // If it's a parent comment, delete all replies
-    if (!comment.parentComment) {
-      await Comment.deleteMany({ parentComment: commentId });
-    } else {
-      // If it's a reply, remove from parent's replies array
+    const pageId = comment.pageId;
+    const parentId = comment.parentComment?.toString() || null;
+
+    // If it's a reply, remove from parent's replies array
+    if (comment.parentComment) {
       await Comment.findByIdAndUpdate(comment.parentComment, {
         $pull: { replies: commentId },
       });
     }
 
-    const pageId = comment.pageId;
-    const parentId = comment.parentComment?.toString() || null;
-
-    await Comment.findByIdAndDelete(commentId);
+    // Recursively delete the comment and all its nested replies
+    await this.recursivelyDeleteComments(commentId);
 
     // Emit socket event
     emitToPage(pageId, SOCKET_EVENTS.COMMENT_DELETED, {
