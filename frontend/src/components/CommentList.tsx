@@ -2,6 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Comment, PaginationMeta } from '../types';
 import { commentApi } from '../api/commentApi';
 import { useAuth } from '../contexts/AuthContext';
+import { useSocket } from '../hooks/useSocket';
+import type {
+  CommentCreatedPayload,
+  ReplyCreatedPayload,
+  CommentUpdatedPayload,
+  CommentDeletedPayload,
+  CommentReactionPayload,
+} from '../hooks/useSocket';
 import CommentForm from './CommentForm';
 import CommentItem from './CommentItem';
 
@@ -19,6 +27,107 @@ const CommentList = ({ pageId }: CommentListProps) => {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Socket event handlers
+  const handleSocketCommentCreated = useCallback((payload: CommentCreatedPayload) => {
+    // Add new comment to the beginning if on first page and sorting by newest
+    if (page === 1 && sort === 'newest') {
+      setComments((prev) => [payload.comment, ...prev]);
+      setPagination((prev) => prev ? { ...prev, totalItems: prev.totalItems + 1 } : prev);
+    }
+  }, [page, sort]);
+
+  const handleSocketReplyCreated = useCallback((payload: ReplyCreatedPayload) => {
+    setComments((prev) =>
+      prev.map((comment) => {
+        if (comment._id === payload.parentId) {
+          return {
+            ...comment,
+            replies: [...(comment.replies || []), payload.comment],
+          };
+        }
+        return comment;
+      })
+    );
+  }, []);
+
+  const handleSocketCommentUpdated = useCallback((payload: CommentUpdatedPayload) => {
+    setComments((prev) =>
+      prev.map((comment) => {
+        if (comment._id === payload.comment._id) {
+          return { ...comment, ...payload.comment };
+        }
+        // Check if it's a reply
+        if (comment.replies) {
+          return {
+            ...comment,
+            replies: comment.replies.map((reply) =>
+              reply._id === payload.comment._id ? { ...reply, ...payload.comment } : reply
+            ),
+          };
+        }
+        return comment;
+      })
+    );
+  }, []);
+
+  const handleSocketCommentDeleted = useCallback((payload: CommentDeletedPayload) => {
+    if (payload.parentId) {
+      // It's a reply - remove from parent's replies
+      setComments((prev) =>
+        prev.map((comment) => {
+          if (comment._id === payload.parentId) {
+            return {
+              ...comment,
+              replies: comment.replies?.filter((reply) => reply._id !== payload.commentId),
+            };
+          }
+          return comment;
+        })
+      );
+    } else {
+      // It's a top-level comment - remove from list
+      setComments((prev) => prev.filter((comment) => comment._id !== payload.commentId));
+      setPagination((prev) => prev ? { ...prev, totalItems: Math.max(0, prev.totalItems - 1) } : prev);
+    }
+  }, []);
+
+  const handleSocketCommentReaction = useCallback((payload: CommentReactionPayload) => {
+    setComments((prev) =>
+      prev.map((comment) => {
+        if (comment._id === payload.comment._id) {
+          return {
+            ...comment,
+            likesCount: payload.comment.likesCount,
+            dislikesCount: payload.comment.dislikesCount,
+          };
+        }
+        // Check if it's a reply
+        if (comment.replies) {
+          return {
+            ...comment,
+            replies: comment.replies.map((reply) =>
+              reply._id === payload.comment._id
+                ? { ...reply, likesCount: payload.comment.likesCount, dislikesCount: payload.comment.dislikesCount }
+                : reply
+            ),
+          };
+        }
+        return comment;
+      })
+    );
+  }, []);
+
+  // Initialize socket connection
+  useSocket({
+    pageId,
+    onCommentCreated: handleSocketCommentCreated,
+    onReplyCreated: handleSocketReplyCreated,
+    onCommentUpdated: handleSocketCommentUpdated,
+    onCommentDeleted: handleSocketCommentDeleted,
+    onCommentLiked: handleSocketCommentReaction,
+    onCommentDisliked: handleSocketCommentReaction,
+  });
 
   const fetchComments = useCallback(async () => {
     setIsLoading(true);
@@ -47,34 +156,35 @@ const CommentList = ({ pageId }: CommentListProps) => {
 
   const handleCreateComment = async (content: string) => {
     await commentApi.createComment({ content, pageId });
-    // Reset to first page and refresh
-    setPage(1);
-    await fetchComments();
+    // Socket will handle the UI update, but reset to first page if not there
+    if (page !== 1) {
+      setPage(1);
+    }
   };
 
   const handleReply = async (parentId: string, content: string) => {
     await commentApi.createComment({ content, pageId, parentComment: parentId });
-    await fetchComments();
+    // Socket will handle the UI update
   };
 
   const handleUpdate = async (id: string, content: string) => {
     await commentApi.updateComment(id, { content });
-    await fetchComments();
+    // Socket will handle the UI update
   };
 
   const handleDelete = async (id: string) => {
     await commentApi.deleteComment(id);
-    await fetchComments();
+    // Socket will handle the UI update
   };
 
   const handleLike = async (id: string) => {
     await commentApi.likeComment(id);
-    await fetchComments();
+    // Socket will handle the UI update
   };
 
   const handleDislike = async (id: string) => {
     await commentApi.dislikeComment(id);
-    await fetchComments();
+    // Socket will handle the UI update
   };
 
   const handleSortChange = (newSort: SortOption) => {
@@ -85,7 +195,10 @@ const CommentList = ({ pageId }: CommentListProps) => {
   return (
     <div className="comment-section">
       <div className="comment-section-header">
-        <h2>Comments {pagination && `(${pagination.totalItems})`}</h2>
+        <h2>
+          Comments {pagination && `(${pagination.totalItems})`}
+          <span className="realtime-indicator" title="Real-time updates enabled"> Live</span>
+        </h2>
         <div className="comment-sort">
           <label htmlFor="sort">Sort by:</label>
           <select

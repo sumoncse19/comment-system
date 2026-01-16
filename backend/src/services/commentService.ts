@@ -3,6 +3,7 @@ import Comment from '../models/Comment';
 import { ApiError } from '../utils/ApiError';
 import { IComment, PaginatedResponse, PaginationMeta } from '../types';
 import { CreateCommentInput, UpdateCommentInput, CommentQueryInput } from '../validators/commentValidator';
+import { emitToPage, SOCKET_EVENTS } from '../config/socket';
 
 // Plain object type for lean() results
 interface CommentLean {
@@ -68,6 +69,18 @@ class CommentService {
 
     // Populate author before returning
     await comment.populate('author', 'username avatar');
+
+    // Emit socket event
+    if (parentComment) {
+      emitToPage(pageId, SOCKET_EVENTS.REPLY_CREATED, {
+        comment: comment.toObject(),
+        parentId: parentComment,
+      });
+    } else {
+      emitToPage(pageId, SOCKET_EVENTS.COMMENT_CREATED, {
+        comment: comment.toObject(),
+      });
+    }
 
     return comment;
   }
@@ -186,6 +199,11 @@ class CommentService {
 
     await comment.populate('author', 'username avatar');
 
+    // Emit socket event
+    emitToPage(comment.pageId, SOCKET_EVENTS.COMMENT_UPDATED, {
+      comment: comment.toObject(),
+    });
+
     return comment;
   }
 
@@ -212,7 +230,16 @@ class CommentService {
       });
     }
 
+    const pageId = comment.pageId;
+    const parentId = comment.parentComment?.toString() || null;
+
     await Comment.findByIdAndDelete(commentId);
+
+    // Emit socket event
+    emitToPage(pageId, SOCKET_EVENTS.COMMENT_DELETED, {
+      commentId,
+      parentId,
+    });
   }
 
   // Like a comment
@@ -245,6 +272,11 @@ class CommentService {
 
     await comment.save();
     await comment.populate('author', 'username avatar');
+
+    // Emit socket event
+    emitToPage(comment.pageId, SOCKET_EVENTS.COMMENT_LIKED, {
+      comment: comment.toObject(),
+    });
 
     return comment;
   }
@@ -279,6 +311,11 @@ class CommentService {
 
     await comment.save();
     await comment.populate('author', 'username avatar');
+
+    // Emit socket event
+    emitToPage(comment.pageId, SOCKET_EVENTS.COMMENT_DISLIKED, {
+      comment: comment.toObject(),
+    });
 
     return comment;
   }

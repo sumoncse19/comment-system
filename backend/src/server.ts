@@ -3,8 +3,10 @@ import dotenv from 'dotenv';
 // Load environment variables first
 dotenv.config();
 
+import { createServer } from 'http';
 import app from './app';
 import connectDB from './config/db';
+import { initializeSocket } from './config/socket';
 
 const PORT = process.env.PORT || 5000;
 
@@ -14,8 +16,14 @@ const startServer = async (): Promise<void> => {
     // Connect to database
     await connectDB();
 
+    // Create HTTP server
+    const httpServer = createServer(app);
+
+    // Initialize Socket.io
+    initializeSocket(httpServer);
+
     // Start server
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`
 ========================================
   Comment System API Server
@@ -25,6 +33,7 @@ const startServer = async (): Promise<void> => {
   API: http://localhost:${PORT}/api
   Docs: http://localhost:${PORT}/api-docs
   Health: http://localhost:${PORT}/health
+  Socket.io: Enabled
 ========================================
       `);
     });
