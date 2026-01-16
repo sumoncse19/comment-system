@@ -1,4 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
+import CommentList from '../components/CommentList';
 
 const Home = () => {
   const { user } = useAuth();
@@ -20,11 +21,8 @@ const Home = () => {
           </div>
         </div>
 
-        <div className="info-card">
-          <h2>Comments Section</h2>
-          <p>The comments feature will be available soon!</p>
-          <p className="text-muted">Phase 4: Comments Backend & Frontend</p>
-        </div>
+        {/* Comments Section */}
+        <CommentList pageId="home-page" />
       </div>
     </div>
   );
