@@ -46,6 +46,16 @@ const CommentForm = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Submit on Ctrl+Enter or Cmd+Enter (Mac)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      if (!isSubmitting && content.trim()) {
+        handleSubmit(e as unknown as FormEvent);
+      }
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className={`space-y-3 ${isReply ? 'mt-3' : 'mb-6'}`}>
       {error && (
@@ -56,7 +66,8 @@ const CommentForm = ({
       <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
-        placeholder={placeholder}
+        onKeyDown={handleKeyDown}
+        placeholder={`${placeholder} (Ctrl+Enter to submit)`}
         rows={isReply ? 2 : 3}
         disabled={isSubmitting}
         className="resize-none"
