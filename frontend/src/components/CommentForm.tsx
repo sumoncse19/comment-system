@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface CommentFormProps {
   onSubmit: (content: string) => Promise<void>;
@@ -44,34 +47,46 @@ const CommentForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`comment-form ${isReply ? 'comment-form-reply' : ''}`}>
-      {error && <div className="alert alert-error">{error}</div>}
-      <textarea
+    <form onSubmit={handleSubmit} className={`space-y-3 ${isReply ? 'mt-3' : 'mb-6'}`}>
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      <Textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder={placeholder}
-        className="comment-textarea"
         rows={isReply ? 2 : 3}
         disabled={isSubmitting}
+        className="resize-none"
       />
-      <div className="comment-form-actions">
+      <div className="flex justify-end gap-2">
         {onCancel && (
-          <button
+          <Button
             type="button"
             onClick={onCancel}
-            className="btn btn-outline"
+            variant="outline"
+            size="sm"
             disabled={isSubmitting}
           >
             Cancel
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           type="submit"
-          className="btn btn-primary"
+          size="sm"
           disabled={isSubmitting || !content.trim()}
         >
-          {isSubmitting ? 'Posting...' : buttonText}
-        </button>
+          {isSubmitting ? (
+            <>
+              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+              Posting...
+            </>
+          ) : (
+            buttonText
+          )}
+        </Button>
       </div>
     </form>
   );

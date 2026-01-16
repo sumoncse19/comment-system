@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './components/theme-provider';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
@@ -13,9 +14,9 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <div className="w-12 h-12 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
@@ -31,7 +32,7 @@ function AppRoutes() {
   return (
     <Router>
       <Navbar />
-      <main className="main-content">
+      <main className="min-h-[calc(100vh-64px)] bg-background">
         <Routes>
           <Route
             path="/login"
@@ -66,9 +67,11 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <ThemeProvider defaultTheme="system" storageKey="comment-system-theme">
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
