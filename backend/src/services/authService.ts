@@ -68,20 +68,25 @@ class AuthService {
 
   // Login user
   async login(data: LoginInput): Promise<{ user: IUser; tokens: AuthTokens }> {
-    const { email, password } = data;
+    const { identifier, password } = data;
+
+    // Check if identifier is an email or username
+    const isEmail = identifier.includes('@');
 
     // Find user with password field
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne(
+      isEmail ? { email: identifier.toLowerCase() } : { username: identifier }
+    ).select('+password');
 
     if (!user) {
-      throw ApiError.unauthorized('Invalid email or password');
+      throw ApiError.unauthorized('Invalid credentials');
     }
 
     // Check password
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
-      throw ApiError.unauthorized('Invalid email or password');
+      throw ApiError.unauthorized('Invalid credentials');
     }
 
     // Generate tokens
