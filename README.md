@@ -2,6 +2,18 @@
 
 A full-stack MERN (MongoDB, Express.js, React.js, Node.js) comment system with real-time updates, authentication, and interactive features. This application allows users to view, add, edit, delete, like, dislike, and reply to comments with live updates across all connected clients.
 
+## 🌐 Live Demo
+
+**Frontend (Production):** [https://comment-system-techzu.vercel.app/](https://comment-system-techzu.vercel.app/)
+
+**Backend API:** [https://comment-system-techzu.onrender.com/](https://comment-system-techzu.onrender.com/)
+
+**API Documentation (Swagger):** [https://comment-system-techzu.onrender.com/api-docs/](https://comment-system-techzu.onrender.com/api-docs/)
+
+**Health Check:** [https://comment-system-techzu.onrender.com/health](https://comment-system-techzu.onrender.com/health)
+
+> **Note:** The backend is hosted on Render's free tier, which may spin down after periods of inactivity. First request may take 30-60 seconds to wake up the server.
+
 ## ✨ Highlights
 
 - 🔐 **JWT Authentication** with email or username login
@@ -91,7 +103,7 @@ A full-stack MERN (MongoDB, Express.js, React.js, Node.js) comment system with r
 ## Project Structure
 
 ```
-assessment-comment-system/
+comment-system/
 ├── backend/                      # Backend application
 │   ├── src/
 │   │   ├── config/              # Configuration files
@@ -178,122 +190,242 @@ assessment-comment-system/
 └── README.md                     # This file
 ```
 
-## Installation & Setup
+## 🚀 Running Locally
+
+Follow these steps to run the application on your local machine.
 
 ### Prerequisites
-- **Node.js** (v18 or higher)
-- **npm** or **yarn**
-- **MongoDB Atlas** account (or local MongoDB instance)
-- **Git**
 
-### 1. Clone the Repository
+Before you begin, ensure you have the following installed:
+
+- **Node.js** (v18 or higher) - [Download](https://nodejs.org/)
+- **npm** (comes with Node.js)
+- **MongoDB Atlas** account - [Sign up free](https://www.mongodb.com/cloud/atlas/register)
+- **Git** - [Download](https://git-scm.com/)
+
+### Step 1: Clone the Repository
 
 ```bash
-git clone <your-repository-url>
-cd assessment-comment-system
+git clone https://github.com/sumoncse19/comment-system.git
+cd comment-system
 ```
 
-### 2. Backend Setup
+### Step 2: Backend Setup
+
+#### 2.1 Navigate to Backend Directory
 
 ```bash
-# Navigate to backend directory
 cd backend
+```
 
-# Install dependencies
+#### 2.2 Install Dependencies
+
+```bash
 npm install
+```
 
-# Create .env file from example
+#### 2.3 Create Environment File
+
+Create a `.env` file in the `backend` directory:
+
+```bash
+# On Mac/Linux
 cp .env.example .env
 
-# Edit .env file with your configuration (see Environment Variables section below)
+# On Windows
+copy .env.example .env
 ```
 
-#### Backend Environment Variables
+#### 2.4 Configure Environment Variables
 
-Create a `.env` file in the `backend` directory with the following variables:
+Open `.env` file and update with your values:
 
 ```env
 # Server Configuration
 NODE_ENV=development
 PORT=5000
 
-# MongoDB Configuration
+# MongoDB Configuration (REQUIRED - Get from MongoDB Atlas)
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/comment-system?retryWrites=true&w=majority
 
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key-min-256-bits
+# JWT Configuration (REQUIRED - Generate secure random strings)
+JWT_SECRET=your-super-secret-jwt-key-min-32-characters-long
 JWT_EXPIRES_IN=15m
-JWT_REFRESH_SECRET=your-super-secret-refresh-key-min-256-bits
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-min-32-characters-long
 JWT_REFRESH_EXPIRES_IN=7d
 
-# Frontend URL (for CORS)
+# CORS Configuration (REQUIRED for local development)
 CLIENT_URL=http://localhost:5173
+
+# Rate Limiting (Optional - has defaults)
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
 ```
 
-**Important Notes:**
-- Replace `MONGODB_URI` with your MongoDB Atlas connection string
-- Generate secure random strings for `JWT_SECRET` and `JWT_REFRESH_SECRET` (at least 32 characters)
-- `CLIENT_URL` should match your frontend development server URL
+**Important Configuration Notes:**
 
-#### Start Backend Server
+1. **MongoDB URI**:
+   - Go to [MongoDB Atlas](https://cloud.mongodb.com/)
+   - Create a free cluster
+   - Click "Connect" → "Connect your application"
+   - Copy the connection string
+   - Replace `<username>`, `<password>`, and `<dbname>` with your values
+
+2. **JWT Secrets**:
+   - Generate secure random strings (at least 32 characters)
+   - You can use: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+   - **Never** use the example values in production
+
+3. **CLIENT_URL**:
+   - Must be `http://localhost:5173` for local development
+   - For production, use your deployed frontend URL
+
+#### 2.5 Start Backend Server
 
 ```bash
 # Development mode (with hot reload)
 npm run dev
-
-# Production mode
-npm run build
-npm start
 ```
 
-The backend server will start on `http://localhost:5000`
+You should see:
+```
+✓ MongoDB connected successfully
+✓ Server running on http://localhost:5000
+✓ Socket.io initialized
+```
 
-### 3. Frontend Setup
+**Backend is now running at:** `http://localhost:5000`
+
+### Step 3: Frontend Setup
+
+Open a **new terminal window** (keep backend running).
+
+#### 3.1 Navigate to Frontend Directory
 
 ```bash
-# Navigate to frontend directory (from root)
+# From project root
 cd frontend
-
-# Install dependencies
-npm install
-
-# Create .env file
-# Create a .env file in the frontend directory
 ```
 
-#### Frontend Environment Variables
+#### 3.2 Install Dependencies
+
+```bash
+npm install
+```
+
+#### 3.3 Create Environment File
 
 Create a `.env` file in the `frontend` directory:
 
 ```env
-# Backend API URL
+# Backend API URL (REQUIRED)
 VITE_API_URL=http://localhost:5000/api
 ```
 
-#### Start Frontend Development Server
+**Note:** Make sure the URL matches your backend server (default: `http://localhost:5000/api`)
+
+#### 3.4 Start Frontend Development Server
 
 ```bash
 npm run dev
 ```
 
-The frontend application will start on `http://localhost:5173`
+You should see:
+```
+VITE v7.2.4  ready in 500 ms
 
-### 4. Access the Application
+➜  Local:   http://localhost:5173/
+➜  Network: use --host to expose
+```
 
-1. Open your browser and navigate to `http://localhost:5173`
-2. Register a new account
-3. Login with your credentials
-4. Start commenting!
+**Frontend is now running at:** `http://localhost:5173`
+
+### Step 4: Access the Application
+
+1. **Open your browser** and navigate to: `http://localhost:5173`
+
+2. **Register a new account**:
+   - Click "Register" in the navbar
+   - Fill in username, email, and password
+   - Click "Register" button
+
+3. **Login**:
+   - Enter your email/username and password
+   - You'll be redirected to the home page
+
+4. **Start commenting!**:
+   - Write a comment in the text area
+   - Press **Ctrl+Enter** (or Cmd+Enter on Mac) to submit
+   - Try liking, replying, editing, and deleting comments
+   - Open multiple tabs to see real-time updates in action
+
+### Step 5: Verify Everything Works
+
+**Backend Verification:**
+- Visit `http://localhost:5000/health` - Should show: `{"success": true, "message": "Server is running"}`
+- Visit `http://localhost:5000/api-docs` - Should show Swagger API documentation
+
+**Frontend Verification:**
+- Check browser console (F12) for any errors
+- Look for "Socket connected" message in console
+- Verify you can register, login, and create comments
+
+### Troubleshooting
+
+#### Backend won't start
+
+**Port already in use:**
+```bash
+# Find process on port 5000
+lsof -i :5000           # Mac/Linux
+netstat -ano | findstr :5000  # Windows
+
+# Kill the process or change PORT in .env
+```
+
+**MongoDB connection fails:**
+- Verify your connection string in `.env`
+- Check if your IP is whitelisted in MongoDB Atlas (Network Access)
+- Ensure MongoDB Atlas cluster is running
+- Try adding `0.0.0.0/0` to allow all IPs (for development only)
+
+#### Frontend can't connect to backend
+
+- Verify backend is running on `http://localhost:5000`
+- Check `VITE_API_URL` in `frontend/.env` is correct
+- Check browser console for CORS errors
+- Verify `CLIENT_URL` in `backend/.env` is `http://localhost:5173`
+
+#### Real-time updates not working
+
+- Open browser console (F12) and check for Socket.io errors
+- Look for "Socket connected" message
+- Verify backend Socket.io is initialized (check terminal logs)
+- Make sure both backend and frontend are running
+
+#### Token/Authentication issues
+
+- Clear browser localStorage: Open DevTools → Application → Local Storage → Clear All
+- Try logging out and logging in again
+- Check if `JWT_SECRET` and `JWT_REFRESH_SECRET` are set in `backend/.env`
+
+### Development Tips
+
+- **Backend logs**: Watch terminal for request logs and errors
+- **Frontend console**: Open browser DevTools (F12) to see client-side logs
+- **API testing**: Use Swagger docs at `http://localhost:5000/api-docs`
+- **Hot reload**: Both servers support hot reload - just save your changes
+- **Multi-user testing**: Open multiple browser windows/tabs to test real-time features
 
 ## API Documentation
 
 ### Swagger Documentation
 
-Once the backend server is running, access the interactive API documentation at:
+Interactive API documentation is available at:
 
-```
-http://localhost:5000/api-docs
-```
+**Production:** [https://comment-system-techzu.onrender.com/api-docs/](https://comment-system-techzu.onrender.com/api-docs/)
+
+**Local Development:** `http://localhost:5000/api-docs`
 
 ### API Endpoints
 
@@ -617,55 +749,190 @@ netstat -ano | findstr :5000  # Windows
 - Check if refresh token is expired (7 days by default)
 - Verify `JWT_REFRESH_SECRET` is set in backend `.env`
 
-## Deployment
+## 🌍 Deployment
 
-### Backend Deployment (Example: Heroku)
+This project is currently deployed using **Vercel** (frontend) and **Render** (backend).
 
-```bash
-# Install Heroku CLI
-# Login to Heroku
-heroku login
+**Live URLs:**
+- Frontend: [https://comment-system-techzu.vercel.app/](https://comment-system-techzu.vercel.app/)
+- Backend: [https://comment-system-techzu.onrender.com/](https://comment-system-techzu.onrender.com/)
 
-# Create new Heroku app
-heroku create your-app-name
+### Deploy Your Own Instance
 
-# Set environment variables
-heroku config:set NODE_ENV=production
-heroku config:set MONGODB_URI=your-mongodb-uri
-heroku config:set JWT_SECRET=your-jwt-secret
-heroku config:set JWT_REFRESH_SECRET=your-refresh-secret
-heroku config:set CLIENT_URL=https://your-frontend-url.com
+Follow these steps to deploy your own version:
 
-# Deploy
-git push heroku main
+### Backend Deployment (Render)
+
+#### 1. Create Render Account
+- Go to [render.com](https://render.com/) and sign up
+- Connect your GitHub account
+
+#### 2. Create New Web Service
+- Click "New +" → "Web Service"
+- Connect your GitHub repository
+- Select the repository: `comment-system`
+
+#### 3. Configure Build Settings
+
+| Setting | Value |
+|---------|-------|
+| **Name** | `your-app-name-backend` |
+| **Region** | Choose closest to your users |
+| **Branch** | `main` |
+| **Root Directory** | `backend` |
+| **Runtime** | `Node` |
+| **Build Command** | `npm install && npm run build` |
+| **Start Command** | `npm start` |
+
+#### 4. Add Environment Variables
+
+Click "Advanced" and add these environment variables:
+
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/comment-system
+JWT_SECRET=your-production-secret-min-32-characters
+JWT_REFRESH_SECRET=your-production-refresh-secret-min-32-characters
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+CLIENT_URL=http://localhost:5173,https://your-frontend-url.vercel.app
+NODE_ENV=production
 ```
 
-### Frontend Deployment (Example: Vercel)
+**Important Notes:**
+- Use **production-grade** secrets (generate with `crypto.randomBytes(32).toString('hex')`)
+- `CLIENT_URL` can support multiple origins (comma-separated) for local + production
+- **DO NOT** set `PORT` - Render sets it automatically
+- Get `MONGODB_URI` from MongoDB Atlas
 
-```bash
-# Install Vercel CLI
-npm install -g vercel
+#### 5. Deploy
+- Click "Create Web Service"
+- Wait for deployment (usually 2-3 minutes)
+- Copy your backend URL: `https://your-app-name.onrender.com`
 
-# Navigate to frontend directory
-cd frontend
+### Frontend Deployment (Vercel)
 
-# Deploy
-vercel
+#### 1. Create Vercel Account
+- Go to [vercel.com](https://vercel.com/) and sign up
+- Connect your GitHub account
 
-# Set environment variable
-vercel env add VITE_API_URL
-```
+#### 2. Import Project
+- Click "Add New..." → "Project"
+- Import your repository: `comment-system`
+
+#### 3. Configure Build Settings
+
+| Setting | Value |
+|---------|-------|
+| **Framework Preset** | `Vite` |
+| **Root Directory** | `frontend` |
+| **Build Command** | `npm run build` |
+| **Output Directory** | `dist` |
+| **Install Command** | `npm install` |
+
+#### 4. Add Environment Variables
+
+In "Environment Variables" section, add:
+
+| Name | Value |
+|------|-------|
+| `VITE_API_URL` | `https://your-backend-url.onrender.com/api` |
+
+(Use your Render backend URL from Step 5 above)
+
+#### 5. Deploy
+- Click "Deploy"
+- Wait for deployment (usually 1-2 minutes)
+- You'll get a URL like: `https://your-app-name.vercel.app`
+
+#### 6. Update Backend CORS
+
+Go back to **Render** → Your backend service → **Environment**:
+- Update `CLIENT_URL` to include your Vercel URL:
+  ```
+  CLIENT_URL=http://localhost:5173,https://your-app-name.vercel.app
+  ```
+- Save (backend will auto-redeploy)
+
+### Deployment Verification
+
+After deployment, verify everything works:
+
+1. **Health Check**: Visit `https://your-backend.onrender.com/health`
+   - Should return: `{"success": true, "message": "Server is running"}`
+
+2. **API Docs**: Visit `https://your-backend.onrender.com/api-docs`
+   - Should show Swagger documentation
+
+3. **Frontend**: Visit your Vercel URL
+   - Register a new account
+   - Create a comment
+   - Check browser console for errors
+
+4. **Real-time**: Open two tabs
+   - Create comment in one tab
+   - Should appear instantly in the other tab
 
 ### Production Considerations
 
-1. **Database**: Ensure MongoDB Atlas is configured for production (connection limits, backups)
-2. **Environment Variables**: Never commit `.env` files to Git
-3. **HTTPS**: Use HTTPS in production for security
-4. **CORS**: Update `CLIENT_URL` to your production frontend URL
-5. **Rate Limiting**: Adjust rate limits based on your needs
-6. **Logging**: Implement proper logging (Winston, Morgan)
-7. **Monitoring**: Set up error monitoring (Sentry, LogRocket)
-8. **Token Storage**: Consider using httpOnly cookies instead of localStorage
+#### Security
+- ✅ Use strong, unique JWT secrets (32+ characters)
+- ✅ Never commit `.env` files to Git
+- ✅ Enable HTTPS (automatic on Vercel/Render)
+- ✅ Keep dependencies updated
+- ✅ Use environment-specific MongoDB databases
+
+#### Performance
+- ✅ Enable MongoDB Atlas connection pooling
+- ✅ Add database indexes (already configured)
+- ✅ Consider upgrading Render to paid tier for better performance
+- ✅ Enable Vercel Analytics for monitoring
+- ✅ Use CDN for static assets (automatic with Vercel)
+
+#### Monitoring
+- 📊 Set up error monitoring (Sentry, LogRocket)
+- 📊 Monitor Render logs for backend errors
+- 📊 Check Vercel Analytics for frontend metrics
+- 📊 Set up MongoDB Atlas alerts for database issues
+- 📊 Monitor API response times
+
+#### Scaling
+- Render free tier: 512 MB RAM, spins down after inactivity
+- Render paid tier ($7+/mo): No spin down, more resources
+- Vercel: Scales automatically (generous free tier)
+- MongoDB Atlas: Scale cluster as needed (M0 free tier → paid tiers)
+
+#### Cost Estimate (Free Tier)
+- **MongoDB Atlas**: Free (M0 cluster - 512 MB storage)
+- **Render**: Free (with spin-down limitations)
+- **Vercel**: Free (100 GB bandwidth, unlimited requests)
+- **Total**: $0/month for hobby projects
+
+#### Cost Estimate (Production)
+- **MongoDB Atlas**: $9+/month (M10 cluster - 2 GB RAM)
+- **Render**: $7+/month (Starter plan - 512 MB RAM, no spin-down)
+- **Vercel**: Free (Pro: $20/month if needed)
+- **Total**: ~$16-36/month for production use
+
+### Environment Variables Reference
+
+#### Backend Environment Variables
+
+| Variable | Required | Example | Notes |
+|----------|----------|---------|-------|
+| `MONGODB_URI` | Yes | `mongodb+srv://...` | MongoDB connection string |
+| `JWT_SECRET` | Yes | `abc123...` (32+ chars) | Access token secret |
+| `JWT_REFRESH_SECRET` | Yes | `xyz789...` (32+ chars) | Refresh token secret |
+| `JWT_EXPIRES_IN` | Yes | `15m` | Access token expiry |
+| `JWT_REFRESH_EXPIRES_IN` | Yes | `7d` | Refresh token expiry |
+| `CLIENT_URL` | Yes | `https://app.vercel.app` | Frontend URL(s) for CORS |
+| `NODE_ENV` | Recommended | `production` | Environment mode |
+| `PORT` | No | (auto-set by Render) | Server port |
+
+#### Frontend Environment Variables
+
+| Variable | Required | Example | Notes |
+|----------|----------|---------|-------|
+| `VITE_API_URL` | Yes | `https://api.onrender.com/api` | Backend API URL |
 
 ## Contributing
 
@@ -683,9 +950,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Contact
 
-For questions or support, please contact:
-- **Your Name** - your.email@example.com
-- **GitHub** - [@yourusername](https://github.com/yourusername)
+For questions or support:
+- **GitHub Repository** - [sumoncse19/comment-system](https://github.com/sumoncse19/comment-system)
+- **Live Demo** - [https://comment-system-techzu.vercel.app/](https://comment-system-techzu.vercel.app/)
 
 ## Key Features & Improvements
 
@@ -744,5 +1011,3 @@ This implementation goes beyond the basic requirements with several polish and q
 - Tailwind CSS for utility-first styling
 
 ---
-
-**Built with ❤️ using the MERN Stack + Modern Web Technologies**
