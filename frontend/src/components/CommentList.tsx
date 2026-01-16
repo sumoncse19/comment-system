@@ -46,51 +46,73 @@ const CommentList = ({ pageId }: CommentListProps) => {
   );
 
   const handleSocketReplyCreated = useCallback((payload: ReplyCreatedPayload) => {
-    setComments((prev) =>
-      prev.map((comment) => {
+    setComments((prev) => {
+      // Recursive function to add reply at any nesting level
+      const addReplyToComment = (comment: Comment): Comment => {
         if (comment._id === payload.parentId) {
           return {
             ...comment,
             replies: [...(comment.replies || []), payload.comment],
           };
         }
-        return comment;
-      })
-    );
-  }, []);
-
-  const handleSocketCommentUpdated = useCallback((payload: CommentUpdatedPayload) => {
-    setComments((prev) =>
-      prev.map((comment) => {
-        if (comment._id === payload.comment._id) {
-          return { ...comment, ...payload.comment };
-        }
-        if (comment.replies) {
+        // If not the parent, check nested replies
+        if (comment.replies && comment.replies.length > 0) {
           return {
             ...comment,
-            replies: comment.replies.map((reply) =>
-              reply._id === payload.comment._id ? { ...reply, ...payload.comment } : reply
-            ),
+            replies: comment.replies.map(addReplyToComment),
           };
         }
         return comment;
-      })
-    );
+      };
+
+      return prev.map(addReplyToComment);
+    });
+  }, []);
+
+  const handleSocketCommentUpdated = useCallback((payload: CommentUpdatedPayload) => {
+    setComments((prev) => {
+      // Recursive function to update comment at any nesting level
+      const updateComment = (comment: Comment): Comment => {
+        if (comment._id === payload.comment._id) {
+          return { ...comment, ...payload.comment };
+        }
+        // Check nested replies
+        if (comment.replies && comment.replies.length > 0) {
+          return {
+            ...comment,
+            replies: comment.replies.map(updateComment),
+          };
+        }
+        return comment;
+      };
+
+      return prev.map(updateComment);
+    });
   }, []);
 
   const handleSocketCommentDeleted = useCallback((payload: CommentDeletedPayload) => {
     if (payload.parentId) {
-      setComments((prev) =>
-        prev.map((comment) => {
+      setComments((prev) => {
+        // Recursive function to delete comment at any nesting level
+        const deleteFromComment = (comment: Comment): Comment => {
           if (comment._id === payload.parentId) {
             return {
               ...comment,
               replies: comment.replies?.filter((reply) => reply._id !== payload.commentId),
             };
           }
+          // Check nested replies
+          if (comment.replies && comment.replies.length > 0) {
+            return {
+              ...comment,
+              replies: comment.replies.map(deleteFromComment),
+            };
+          }
           return comment;
-        })
-      );
+        };
+
+        return prev.map(deleteFromComment);
+      });
     } else {
       setComments((prev) => prev.filter((comment) => comment._id !== payload.commentId));
       setPagination((prev) => (prev ? { ...prev, totalItems: Math.max(0, prev.totalItems - 1) } : prev));
@@ -98,8 +120,9 @@ const CommentList = ({ pageId }: CommentListProps) => {
   }, []);
 
   const handleSocketCommentReaction = useCallback((payload: CommentReactionPayload) => {
-    setComments((prev) =>
-      prev.map((comment) => {
+    setComments((prev) => {
+      // Recursive function to update reaction at any nesting level
+      const updateReaction = (comment: Comment): Comment => {
         if (comment._id === payload.comment._id) {
           return {
             ...comment,
@@ -107,23 +130,18 @@ const CommentList = ({ pageId }: CommentListProps) => {
             dislikesCount: payload.comment.dislikesCount,
           };
         }
-        if (comment.replies) {
+        // Check nested replies
+        if (comment.replies && comment.replies.length > 0) {
           return {
             ...comment,
-            replies: comment.replies.map((reply) =>
-              reply._id === payload.comment._id
-                ? {
-                    ...reply,
-                    likesCount: payload.comment.likesCount,
-                    dislikesCount: payload.comment.dislikesCount,
-                  }
-                : reply
-            ),
+            replies: comment.replies.map(updateReaction),
           };
         }
         return comment;
-      })
-    );
+      };
+
+      return prev.map(updateReaction);
+    });
   }, []);
 
   // Initialize socket connection
@@ -183,8 +201,9 @@ const CommentList = ({ pageId }: CommentListProps) => {
 
   const handleLike = async (id: string) => {
     // Optimistically update the UI
-    setComments((prev) =>
-      prev.map((comment) => {
+    setComments((prev) => {
+      // Recursive function to update like at any nesting level
+      const updateLike = (comment: Comment): Comment => {
         if (comment._id === id) {
           const currentReaction = comment.userReaction;
           const newReaction = currentReaction === 'like' ? null : 'like';
@@ -195,36 +214,27 @@ const CommentList = ({ pageId }: CommentListProps) => {
             dislikesCount: currentReaction === 'dislike' ? comment.dislikesCount - 1 : comment.dislikesCount,
           };
         }
-        // Update replies
-        if (comment.replies) {
+        // Check nested replies
+        if (comment.replies && comment.replies.length > 0) {
           return {
             ...comment,
-            replies: comment.replies.map((reply) => {
-              if (reply._id === id) {
-                const currentReaction = reply.userReaction;
-                const newReaction = currentReaction === 'like' ? null : 'like';
-                return {
-                  ...reply,
-                  userReaction: newReaction,
-                  likesCount: newReaction === 'like' ? reply.likesCount + 1 : reply.likesCount - 1,
-                  dislikesCount: currentReaction === 'dislike' ? reply.dislikesCount - 1 : reply.dislikesCount,
-                };
-              }
-              return reply;
-            }),
+            replies: comment.replies.map(updateLike),
           };
         }
         return comment;
-      })
-    );
+      };
+
+      return prev.map(updateLike);
+    });
 
     await commentApi.likeComment(id);
   };
 
   const handleDislike = async (id: string) => {
     // Optimistically update the UI
-    setComments((prev) =>
-      prev.map((comment) => {
+    setComments((prev) => {
+      // Recursive function to update dislike at any nesting level
+      const updateDislike = (comment: Comment): Comment => {
         if (comment._id === id) {
           const currentReaction = comment.userReaction;
           const newReaction = currentReaction === 'dislike' ? null : 'dislike';
@@ -235,28 +245,18 @@ const CommentList = ({ pageId }: CommentListProps) => {
             likesCount: currentReaction === 'like' ? comment.likesCount - 1 : comment.likesCount,
           };
         }
-        // Update replies
-        if (comment.replies) {
+        // Check nested replies
+        if (comment.replies && comment.replies.length > 0) {
           return {
             ...comment,
-            replies: comment.replies.map((reply) => {
-              if (reply._id === id) {
-                const currentReaction = reply.userReaction;
-                const newReaction = currentReaction === 'dislike' ? null : 'dislike';
-                return {
-                  ...reply,
-                  userReaction: newReaction,
-                  dislikesCount: newReaction === 'dislike' ? reply.dislikesCount + 1 : reply.dislikesCount - 1,
-                  likesCount: currentReaction === 'like' ? reply.likesCount - 1 : reply.likesCount,
-                };
-              }
-              return reply;
-            }),
+            replies: comment.replies.map(updateDislike),
           };
         }
         return comment;
-      })
-    );
+      };
+
+      return prev.map(updateDislike);
+    });
 
     await commentApi.dislikeComment(id);
   };

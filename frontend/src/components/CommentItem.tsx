@@ -5,6 +5,17 @@ import CommentForm from './CommentForm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { ThumbsUp, ThumbsDown, Reply, Edit2, Trash2 } from 'lucide-react';
 
 interface CommentItemProps {
@@ -30,6 +41,7 @@ const CommentItem = ({
   const [isEditing, setIsEditing] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const isOwner = user?._id === comment.author._id;
   const canReply = depth < 2;
@@ -57,12 +69,10 @@ const CommentItem = ({
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
-      return;
-    }
     setIsDeleting(true);
     try {
       await onDelete(comment._id);
+      setShowDeleteDialog(false);
     } finally {
       setIsDeleting(false);
     }
@@ -113,20 +123,46 @@ const CommentItem = ({
               >
                 <Edit2 className="h-4 w-4" />
               </Button>
-              <Button
-                onClick={handleDelete}
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-destructive hover:text-destructive"
-                title="Delete"
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
+              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    title="Delete"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete this comment? This action cannot be undone.
+                      {comment.replies && comment.replies.length > 0 && (
+                        <span className="block mt-2 font-medium text-destructive">
+                          This will also delete all {comment.replies.length} {comment.replies.length === 1 ? 'reply' : 'replies'}.
+                        </span>
+                      )}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
         </div>
