@@ -39,8 +39,35 @@ const CommentList = ({ pageId }: CommentListProps) => {
   const handleSocketCommentCreated = useCallback(
     (payload: CommentCreatedPayload) => {
       if (page === 1 && sort === 'newest') {
-        setComments((prev) => [payload.comment, ...prev]);
-        setPagination((prev) => (prev ? { ...prev, totalItems: prev.totalItems + 1 } : prev));
+        setComments((prev) => {
+          const newComments = [payload.comment, ...prev];
+          // Keep only the page limit (10 items)
+          return newComments.slice(0, 10);
+        });
+        setPagination((prev) => {
+          if (!prev) return prev;
+          const newTotalItems = prev.totalItems + 1;
+          const newTotalPages = Math.ceil(newTotalItems / prev.itemsPerPage);
+          return {
+            ...prev,
+            totalItems: newTotalItems,
+            totalPages: newTotalPages,
+            hasNextPage: prev.currentPage < newTotalPages,
+          };
+        });
+      } else {
+        // Not on page 1 or not sorting by newest, just update pagination
+        setPagination((prev) => {
+          if (!prev) return prev;
+          const newTotalItems = prev.totalItems + 1;
+          const newTotalPages = Math.ceil(newTotalItems / prev.itemsPerPage);
+          return {
+            ...prev,
+            totalItems: newTotalItems,
+            totalPages: newTotalPages,
+            hasNextPage: prev.currentPage < newTotalPages,
+          };
+        });
       }
     },
     [page, sort]
@@ -93,6 +120,7 @@ const CommentList = ({ pageId }: CommentListProps) => {
 
   const handleSocketCommentDeleted = useCallback((payload: CommentDeletedPayload) => {
     if (payload.parentId) {
+      // It's a reply, just remove from the nested replies (no pagination update needed)
       setComments((prev) => {
         // Recursive function to delete comment at any nesting level
         const deleteFromComment = (comment: Comment): Comment => {
@@ -115,8 +143,30 @@ const CommentList = ({ pageId }: CommentListProps) => {
         return prev.map(deleteFromComment);
       });
     } else {
-      setComments((prev) => prev.filter((comment) => comment._id !== payload.commentId));
-      setPagination((prev) => (prev ? { ...prev, totalItems: Math.max(0, prev.totalItems - 1) } : prev));
+      // It's a parent comment, update pagination
+      setComments((prev) => {
+        const filtered = prev.filter((comment) => comment._id !== payload.commentId);
+        return filtered;
+      });
+
+      setPagination((prev) => {
+        if (!prev) return prev;
+        const newTotalItems = Math.max(0, prev.totalItems - 1);
+        const newTotalPages = Math.ceil(newTotalItems / prev.itemsPerPage) || 1;
+
+        // If current page is now beyond the last page, move to the last valid page
+        if (prev.currentPage > newTotalPages) {
+          setPage(newTotalPages);
+        }
+
+        return {
+          ...prev,
+          totalItems: newTotalItems,
+          totalPages: newTotalPages,
+          hasNextPage: prev.currentPage < newTotalPages,
+          hasPrevPage: prev.currentPage > 1,
+        };
+      });
     }
   }, []);
 
