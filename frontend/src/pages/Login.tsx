@@ -9,6 +9,7 @@ import { LogIn } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
 
 const loginSchema = z.object({
   identifier: z.string().min(1, 'Email or username is required'),
@@ -36,6 +37,7 @@ const Login = () => {
     clearError();
     try {
       await login(data);
+      toast.success('Welcome back! Login successful.');
       navigate(from, { replace: true });
     } catch {
       // Error handled by context

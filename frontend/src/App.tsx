@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './components/theme-provider';
+import { Toaster } from './components/ui/sonner';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
@@ -70,6 +71,7 @@ function App() {
     <ThemeProvider defaultTheme="system" storageKey="comment-system-theme">
       <AuthProvider>
         <AppRoutes />
+        <Toaster />
       </AuthProvider>
     </ThemeProvider>
   );

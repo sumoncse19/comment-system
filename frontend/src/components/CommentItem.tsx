@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ThumbsUp, ThumbsDown, Reply, Edit2, Trash2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Reply, Edit2, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface CommentItemProps {
   comment: Comment;
@@ -42,9 +42,19 @@ const CommentItem = ({
   const [isReplying, setIsReplying] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const isOwner = user?._id === comment.author._id;
   const canReply = depth < 2;
+  const hasReplies = comment.replies && comment.replies.length > 0;
+
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+    // Close reply form when collapsing
+    if (!isCollapsed && isReplying) {
+      setIsReplying(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -107,6 +117,26 @@ const CommentItem = ({
                   <Badge variant="secondary" className="text-xs py-0">
                     edited
                   </Badge>
+                )}
+                {hasReplies && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleCollapse}
+                    className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                  >
+                    {isCollapsed ? (
+                      <>
+                        <ChevronRight className="h-3 w-3" />
+                        {comment.replies?.length ?? 0} {(comment.replies?.length ?? 0) === 1 ? 'reply' : 'replies'}
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3 w-3" />
+                        {comment.replies?.length ?? 0} {(comment.replies?.length ?? 0) === 1 ? 'reply' : 'replies'}
+                      </>
+                    )}
+                  </Button>
                 )}
               </div>
             </div>
@@ -221,7 +251,7 @@ const CommentItem = ({
           </>
         )}
 
-        {isReplying && (
+        {isReplying && !isCollapsed && (
           <div className="mt-4 pt-4 border-t">
             <CommentForm
               onSubmit={handleReply}
@@ -235,7 +265,7 @@ const CommentItem = ({
       </div>
 
       {/* Render replies */}
-      {comment.replies && comment.replies.length > 0 && (
+      {!isCollapsed && comment.replies && comment.replies.length > 0 && (
         <div className="space-y-3 pt-3">
           {comment.replies.map((reply) => (
             <CommentItem

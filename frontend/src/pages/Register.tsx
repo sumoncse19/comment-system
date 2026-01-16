@@ -9,6 +9,7 @@ import { UserPlus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
 
 const registerSchema = z.object({
   username: z
@@ -48,6 +49,7 @@ const Register = () => {
         email: data.email,
         password: data.password,
       });
+      toast.success('Account created successfully! Welcome aboard.');
       navigate('/', { replace: true });
     } catch {
       // Error handled by context

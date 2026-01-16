@@ -3,6 +3,7 @@ import type { Comment, PaginationMeta } from '../types';
 import { commentApi } from '../api/commentApi';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../hooks/useSocket';
+import { toast } from 'sonner';
 import type {
   CommentCreatedPayload,
   ReplyCreatedPayload,
@@ -181,22 +182,46 @@ const CommentList = ({ pageId }: CommentListProps) => {
   }, [fetchComments]);
 
   const handleCreateComment = async (content: string) => {
-    await commentApi.createComment({ content, pageId });
-    if (page !== 1) {
-      setPage(1);
+    try {
+      await commentApi.createComment({ content, pageId });
+      toast.success('Comment posted successfully!');
+      if (page !== 1) {
+        setPage(1);
+      }
+    } catch (error) {
+      toast.error('Failed to post comment. Please try again.');
+      throw error;
     }
   };
 
   const handleReply = async (parentId: string, content: string) => {
-    await commentApi.createComment({ content, pageId, parentComment: parentId });
+    try {
+      await commentApi.createComment({ content, pageId, parentComment: parentId });
+      toast.success('Reply posted successfully!');
+    } catch (error) {
+      toast.error('Failed to post reply. Please try again.');
+      throw error;
+    }
   };
 
   const handleUpdate = async (id: string, content: string) => {
-    await commentApi.updateComment(id, { content });
+    try {
+      await commentApi.updateComment(id, { content });
+      toast.success('Comment updated successfully!');
+    } catch (error) {
+      toast.error('Failed to update comment. Please try again.');
+      throw error;
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await commentApi.deleteComment(id);
+    try {
+      await commentApi.deleteComment(id);
+      toast.success('Comment deleted successfully!');
+    } catch (error) {
+      toast.error('Failed to delete comment. Please try again.');
+      throw error;
+    }
   };
 
   const handleLike = async (id: string) => {
