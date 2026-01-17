@@ -3,6 +3,11 @@ import authService from '../services/authService';
 import { sendSuccess } from '../utils/helpers';
 import { AuthRequest } from '../types';
 import { RegisterInput, LoginInput } from '../validators/authValidator';
+import {
+  ACCESS_TOKEN_COOKIE_OPTIONS,
+  REFRESH_TOKEN_COOKIE_OPTIONS,
+  COOKIE_NAMES,
+} from '../config/security';
 
 class AuthController {
   // Register new user
@@ -11,6 +16,13 @@ class AuthController {
       const data: RegisterInput = req.body;
       const { user, tokens } = await authService.register(data);
 
+      // Set access token cookie (httpOnly)
+      res.cookie(COOKIE_NAMES.ACCESS_TOKEN, tokens.accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+
+      // Set refresh token cookie (httpOnly)
+      res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+
+      // Send user data (NO tokens in response body for security)
       sendSuccess(
         res,
         {
@@ -21,7 +33,6 @@ class AuthController {
             avatar: user.avatar,
             createdAt: user.createdAt,
           },
-          ...tokens,
         },
         'User registered successfully',
         201
@@ -37,6 +48,13 @@ class AuthController {
       const data: LoginInput = req.body;
       const { user, tokens } = await authService.login(data);
 
+      // Set access token cookie (httpOnly)
+      res.cookie(COOKIE_NAMES.ACCESS_TOKEN, tokens.accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+
+      // Set refresh token cookie (httpOnly)
+      res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+
+      // Send user data (NO tokens in response body for security)
       sendSuccess(
         res,
         {
@@ -47,7 +65,6 @@ class AuthController {
             avatar: user.avatar,
             createdAt: user.createdAt,
           },
-          ...tokens,
         },
         'Login successful'
       );
@@ -59,10 +76,23 @@ class AuthController {
   // Refresh access token
   async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { refreshToken } = req.body;
+      // Read refresh token from cookie instead of request body
+      const refreshToken = req.cookies[COOKIE_NAMES.REFRESH_TOKEN];
+
+      if (!refreshToken) {
+        throw new Error('Refresh token not found');
+      }
+
       const tokens = await authService.refreshToken(refreshToken);
 
-      sendSuccess(res, tokens, 'Token refreshed successfully');
+      // Set new access token cookie
+      res.cookie(COOKIE_NAMES.ACCESS_TOKEN, tokens.accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+
+      // Set new refresh token cookie
+      res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
+
+      // Send success response (NO tokens in response body)
+      sendSuccess(res, null, 'Token refreshed successfully');
     } catch (error) {
       next(error);
     }
@@ -99,12 +129,26 @@ class AuthController {
     }
   }
 
-  // Logout (client-side will handle token removal)
+  // Logout - Clear authentication cookies
   async logout(_req: Request, res: Response): Promise<void> {
-    // In a more complex setup, you might want to:
-    // - Blacklist the refresh token
-    // - Clear any server-side sessions
-    // For now, we just send a success response
+    // Clear access token cookie
+    res.clearCookie(COOKIE_NAMES.ACCESS_TOKEN, {
+      ...ACCESS_TOKEN_COOKIE_OPTIONS,
+      maxAge: 0,
+    });
+
+    // Clear refresh token cookie
+    res.clearCookie(COOKIE_NAMES.REFRESH_TOKEN, {
+      ...REFRESH_TOKEN_COOKIE_OPTIONS,
+      maxAge: 0,
+    });
+
+    // Optional: Clear CSRF token cookie
+    res.clearCookie(COOKIE_NAMES.CSRF_TOKEN);
+
+    // Optional: Clear browser cache and storage (in modern browsers)
+    res.setHeader('Clear-Site-Data', '"cache", "cookies", "storage"');
+
     sendSuccess(res, null, 'Logged out successfully');
   }
 }
