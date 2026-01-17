@@ -1,9 +1,32 @@
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { Request, Response, NextFunction } from 'express';
+import { generateSignedCsrfToken, verifyCsrfToken, compareCsrfTokens } from '../utils/csrf';
+import { COOKIE_NAMES, CSRF_TOKEN_COOKIE_OPTIONS, SECURITY_HEADERS } from '../config/security';
+import { ApiError } from '../utils/ApiError';
 
-// Helmet middleware for security headers
-export const helmetMiddleware = helmet();
+// Helmet middleware for security headers with custom configuration
+export const helmetMiddleware = helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...SECURITY_HEADERS.CSP.directives,
+    },
+    reportOnly: SECURITY_HEADERS.CSP.reportOnly,
+  },
+  hsts: {
+    maxAge: SECURITY_HEADERS.HSTS.maxAge,
+    includeSubDomains: SECURITY_HEADERS.HSTS.includeSubDomains,
+    preload: SECURITY_HEADERS.HSTS.preload,
+  },
+  frameguard: {
+    action: 'deny',
+  },
+  xssFilter: true,
+  noSniff: true,
+  referrerPolicy: {
+    policy: SECURITY_HEADERS.REFERRER_POLICY as helmet.ReferrerPolicy,
+  },
+});
 
 // General API rate limiting
 export const apiLimiter = rateLimit({
@@ -77,6 +100,96 @@ export const noSqlInjectionProtection = (
   if (req.body && typeof req.body === 'object') {
     req.body = sanitize(req.body);
   }
+
+  next();
+};
+
+/**
+ * CSRF Token Generation Middleware
+ * Generates and sets CSRF token cookie for GET requests
+ */
+export const csrfTokenGenerator = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  // Only generate token for GET requests or if token doesn't exist
+  if (req.method === 'GET' || !req.cookies[COOKIE_NAMES.CSRF_TOKEN]) {
+    const csrfToken = generateSignedCsrfToken();
+
+    // Set CSRF token cookie (httpOnly=false so JS can read it)
+    res.cookie(COOKIE_NAMES.CSRF_TOKEN, csrfToken, CSRF_TOKEN_COOKIE_OPTIONS);
+
+    // Also send in response header for initial page load
+    res.setHeader('X-CSRF-Token', csrfToken);
+  }
+
+  next();
+};
+
+/**
+ * CSRF Protection Middleware
+ * Validates CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
+ */
+export const csrfProtection = (
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): void => {
+  // Skip CSRF check for safe methods
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+
+  // Get CSRF token from cookie
+  const cookieToken = req.cookies[COOKIE_NAMES.CSRF_TOKEN];
+
+  // Get CSRF token from header
+  const headerToken = req.headers['x-csrf-token'] as string;
+
+  // Check if both tokens exist
+  if (!cookieToken || !headerToken) {
+    return next(ApiError.forbidden('CSRF token missing'));
+  }
+
+  // Verify cookie token signature
+  if (!verifyCsrfToken(cookieToken)) {
+    return next(ApiError.forbidden('Invalid CSRF token'));
+  }
+
+  // Compare tokens (double-submit pattern)
+  if (!compareCsrfTokens(cookieToken, headerToken)) {
+    return next(ApiError.forbidden('CSRF token mismatch'));
+  }
+
+  next();
+};
+
+/**
+ * Additional Security Headers Middleware
+ */
+export const additionalSecurityHeaders = (
+  _req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  // Permissions Policy (formerly Feature Policy)
+  const permissionsPolicy = Object.entries(SECURITY_HEADERS.PERMISSIONS_POLICY)
+    .map(([feature, allowlist]) => {
+      const sources = Array.isArray(allowlist) && allowlist.length > 0
+        ? allowlist.join(' ')
+        : '()';
+      return `${feature}=${sources}`;
+    })
+    .join(', ');
+
+  res.setHeader('Permissions-Policy', permissionsPolicy);
+
+  // X-Permitted-Cross-Domain-Policies
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+
+  // Clear-Site-Data header for logout (will be set in logout endpoint)
+  // res.setHeader('Clear-Site-Data', '"cache", "cookies", "storage"');
 
   next();
 };

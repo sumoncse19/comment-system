@@ -2,6 +2,8 @@
 
 A full-stack MERN (MongoDB, Express.js, React.js, Node.js) comment system with real-time updates, authentication, and interactive features. This application allows users to view, add, edit, delete, like, dislike, and reply to comments with live updates across all connected clients.
 
+> **🔐 Security:** This application implements **industry-standard security best practices** including HttpOnly cookie-based authentication, CSRF protection, and comprehensive security headers. See the [Advanced Security Implementation](#-advanced-security-implementation) section below for details.
+
 ## 🌐 Live Demo
 
 **Frontend (Production):** [https://comment-system-techzu.vercel.app/](https://comment-system-techzu.vercel.app/)
@@ -16,7 +18,8 @@ A full-stack MERN (MongoDB, Express.js, React.js, Node.js) comment system with r
 
 ## ✨ Highlights
 
-- 🔐 **JWT Authentication** with email or username login
+- 🔐 **Enterprise-Grade Security** - HttpOnly cookies, CSRF protection, comprehensive security headers
+- 🔑 **JWT Authentication** with email or username login
 - 💬 **3-Layer Nested Replies** with collapse/expand functionality
 - ⚡ **Real-time Updates** via Socket.io (no page refresh needed)
 - 🎨 **Dark/Light Theme** with system preference detection
@@ -92,12 +95,13 @@ A full-stack MERN (MongoDB, Express.js, React.js, Node.js) comment system with r
 - **TypeScript** 5.9.3 - Type safety
 - **MongoDB** - NoSQL database (hosted on MongoDB Atlas)
 - **Mongoose** 9.1.4 - MongoDB ODM
-- **JWT** (jsonwebtoken 9.0.3) - Authentication
+- **JWT** (jsonwebtoken 9.0.3) - Authentication tokens
 - **bcryptjs** 3.0.3 - Password hashing
+- **cookie-parser** - Cookie parsing for httpOnly cookies
 - **Socket.io** 4.8.3 - Real-time updates
 - **Zod** 4.3.5 - Schema validation
 - **Swagger** - API documentation
-- **Helmet** 8.1.0 - Security headers
+- **Helmet** 8.1.0 - Security headers (CSP, HSTS, etc.)
 - **express-rate-limit** 8.2.1 - Rate limiting
 
 ## Project Structure
@@ -108,13 +112,15 @@ comment-system/
 │   ├── src/
 │   │   ├── config/              # Configuration files
 │   │   │   ├── database.ts      # MongoDB connection
-│   │   │   └── socket.ts        # Socket.io configuration
+│   │   │   ├── socket.ts        # Socket.io configuration
+│   │   │   └── security.ts      # Security constants (cookies, CORS, headers)
 │   │   ├── controllers/         # Request handlers
 │   │   │   ├── authController.ts
 │   │   │   └── commentController.ts
 │   │   ├── middleware/          # Custom middleware
-│   │   │   ├── auth.ts          # Authentication middleware
+│   │   │   ├── auth.ts          # Authentication middleware (cookie-based)
 │   │   │   ├── errorHandler.ts  # Global error handler
+│   │   │   ├── security.ts      # Security middleware (CSRF, headers, XSS)
 │   │   │   └── validate.ts      # Validation middleware
 │   │   ├── models/              # Mongoose models
 │   │   │   ├── User.ts
@@ -127,7 +133,8 @@ comment-system/
 │   │   │   └── commentService.ts
 │   │   ├── types/               # TypeScript type definitions
 │   │   ├── utils/               # Utility functions
-│   │   │   └── ApiError.ts      # Custom error class
+│   │   │   ├── ApiError.ts      # Custom error class
+│   │   │   └── csrf.ts          # CSRF token generation/validation
 │   │   ├── validators/          # Zod validation schemas
 │   │   │   ├── authValidator.ts
 │   │   │   └── commentValidator.ts
@@ -135,13 +142,14 @@ comment-system/
 │   │   └── server.ts            # Server entry point
 │   ├── .env                     # Environment variables
 │   ├── .env.example             # Example environment variables
+│   ├── SECURITY.md              # Backend security documentation
 │   ├── package.json
 │   └── tsconfig.json
 │
 ├── frontend/                     # Frontend application
 │   ├── src/
 │   │   ├── api/                 # API integration
-│   │   │   ├── axios.ts         # Axios instance with interceptors
+│   │   │   ├── axios.ts         # Axios instance (withCredentials, CSRF)
 │   │   │   ├── authApi.ts       # Authentication API calls
 │   │   │   └── commentApi.ts    # Comment API calls
 │   │   ├── components/          # Reusable components
@@ -164,8 +172,10 @@ comment-system/
 │   │   │   ├── ProtectedRoute.tsx
 │   │   │   ├── theme-provider.tsx
 │   │   │   └── theme-toggle.tsx
+│   │   ├── config/              # Configuration files
+│   │   │   └── security.ts      # Security constants and helpers
 │   │   ├── contexts/            # React contexts
-│   │   │   └── AuthContext.tsx  # Authentication state
+│   │   │   └── AuthContext.tsx  # Authentication state (cookie-based)
 │   │   ├── hooks/               # Custom React hooks
 │   │   │   └── useSocket.ts     # Socket.io hook
 │   │   ├── lib/                 # Utility libraries
@@ -176,10 +186,13 @@ comment-system/
 │   │   │   └── Register.tsx
 │   │   ├── types/               # TypeScript type definitions
 │   │   │   └── index.ts
+│   │   ├── utils/               # Utility functions
+│   │   │   └── csrf.ts          # CSRF token reading utility
 │   │   ├── App.tsx              # Root component
 │   │   ├── App.css              # Global styles
 │   │   ├── index.css            # Tailwind CSS with theme variables
 │   │   └── main.tsx             # Entry point
+│   ├── SECURITY.md              # Frontend security documentation
 │   ├── components.json          # shadcn/ui configuration
 │   ├── package.json
 │   ├── postcss.config.js        # PostCSS configuration for Tailwind
@@ -254,6 +267,9 @@ JWT_EXPIRES_IN=15m
 JWT_REFRESH_SECRET=your-super-secret-refresh-key-min-32-characters-long
 JWT_REFRESH_EXPIRES_IN=7d
 
+# CSRF Protection (REQUIRED - Generate secure random string)
+CSRF_SECRET=your-super-secret-csrf-key-min-32-characters-long
+
 # CORS Configuration (REQUIRED for local development)
 CLIENT_URL=http://localhost:5173
 
@@ -271,10 +287,16 @@ RATE_LIMIT_MAX_REQUESTS=100
    - Copy the connection string
    - Replace `<username>`, `<password>`, and `<dbname>` with your values
 
-2. **JWT Secrets**:
-   - Generate secure random strings (at least 32 characters)
-   - You can use: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+2. **JWT Secrets & CSRF Secret**:
+   - Generate secure random strings (at least 32 characters, 64 hex characters recommended)
+   - Run these commands to generate cryptographically secure secrets:
+     ```bash
+     node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
+     node -e "console.log('JWT_REFRESH_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
+     node -e "console.log('CSRF_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
+     ```
    - **Never** use the example values in production
+   - Use different secrets for each environment
 
 3. **CLIENT_URL**:
    - Must be `http://localhost:5173` for local development
@@ -405,9 +427,19 @@ netstat -ano | findstr :5000  # Windows
 
 #### Token/Authentication issues
 
-- Clear browser localStorage: Open DevTools → Application → Local Storage → Clear All
+- **Check cookies:** Open DevTools → Application → Cookies → Look for `accessToken`, `refreshToken`, `csrf-token`
+- **Clear cookies and localStorage:** DevTools → Application → Clear All
 - Try logging out and logging in again
-- Check if `JWT_SECRET` and `JWT_REFRESH_SECRET` are set in `backend/.env`
+- Verify `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `CSRF_SECRET` are set in `backend/.env`
+- Check that `withCredentials: true` is set in frontend axios configuration
+- Verify CORS is configured to allow credentials (`credentials: true`)
+
+#### CSRF Token issues
+
+- Check browser DevTools → Network → Look for `X-CSRF-Token` header in POST/PUT/DELETE requests
+- Verify `csrf-token` cookie exists in DevTools → Application → Cookies
+- Check backend logs for "CSRF token missing" or "CSRF token mismatch" errors
+- Try refreshing the page to get a new CSRF token
 
 ### Development Tips
 
@@ -589,23 +621,279 @@ For optimal performance, the following indexes are created:
 
 ## Security Features
 
-### Backend Security
+### 🔐 Advanced Security Implementation
 
-1. **Helmet** - Sets secure HTTP headers
-2. **CORS** - Configured cross-origin resource sharing
+This application implements **industry-standard security best practices** to protect against common web vulnerabilities including XSS, CSRF, and session hijacking attacks.
+
+#### ✅ HttpOnly Cookie-Based Authentication
+
+**The Problem:** Previously, JWT tokens were stored in `localStorage`, making them vulnerable to XSS (Cross-Site Scripting) attacks. Any malicious JavaScript code could read and steal the tokens.
+
+**The Solution:** Tokens are now stored in **httpOnly cookies** set by the backend, making them completely inaccessible to JavaScript.
+
+**Backend Implementation:**
+```typescript
+// Tokens set as httpOnly cookies with secure flags
+res.cookie('accessToken', token, {
+  httpOnly: true,      // ✅ Prevents JavaScript access (XSS protection)
+  secure: true,        // ✅ HTTPS only (production)
+  sameSite: 'strict',  // ✅ Prevents CSRF attacks
+  maxAge: 15 * 60 * 1000  // ✅ 15 minutes auto-expiry
+});
+```
+
+**Frontend Implementation:**
+```typescript
+// axios configured to send cookies automatically
+const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,  // ✅ Sends httpOnly cookies with every request
+});
+
+// NO localStorage token code - tokens managed by browser
+```
+
+**Files Modified:**
+- Backend: `src/controllers/authController.ts`, `src/middleware/auth.ts`, `src/config/security.ts`
+- Frontend: `src/api/axios.ts`, `src/contexts/AuthContext.tsx`, `src/config/security.ts`
+
+**Security Benefits:**
+- ✅ **XSS Immune:** Tokens cannot be read by JavaScript (even malicious scripts)
+- ✅ **Automatic Security:** Browser manages cookies securely
+- ✅ **HTTPS Only:** Tokens only transmitted over secure connections
+- ✅ **Auto-Expiry:** Cookies expire automatically after set time
+
+---
+
+#### ✅ CSRF Protection (Double-Submit Pattern)
+
+**The Problem:** Cookie-based authentication requires CSRF protection to prevent malicious websites from making authenticated requests on behalf of users.
+
+**The Solution:** Implemented **double-submit cookie pattern** with cryptographically signed tokens.
+
+**How It Works:**
+1. **Generation:** Backend generates a signed CSRF token (32 bytes + HMAC-SHA256 signature)
+2. **Distribution:** Token sent both as cookie (readable by JS) and in `X-CSRF-Token` response header
+3. **Validation:** For state-changing requests (POST/PUT/DELETE/PATCH):
+   - Frontend reads token from cookie and sends it in `X-CSRF-Token` request header
+   - Backend verifies: cookie token matches header token AND signature is valid
+4. **Security:** Uses timing-safe comparison to prevent timing attacks
+
+**Backend Implementation:**
+```typescript
+// CSRF token generation with signature
+const token = crypto.randomBytes(32).toString('hex');
+const signature = crypto.createHmac('sha256', CSRF_SECRET)
+  .update(token)
+  .digest('hex');
+
+// Set cookie (httpOnly=false so JS can read it)
+res.cookie('csrf-token', `${token}.${signature}`, {
+  httpOnly: false,  // ✅ JS can read for double-submit pattern
+  secure: true,
+  sameSite: 'strict'
+});
+```
+
+**Frontend Implementation:**
+```typescript
+// Automatically add CSRF token to state-changing requests
+api.interceptors.request.use((config) => {
+  if (!['get', 'head', 'options'].includes(config.method)) {
+    const csrfToken = getCsrfToken(); // Read from cookie
+    config.headers['X-CSRF-Token'] = csrfToken;
+  }
+  return config;
+});
+```
+
+**Files Created:**
+- Backend: `src/utils/csrf.ts` (token generation & validation)
+- Frontend: `src/utils/csrf.ts` (token reading utility)
+
+**Files Modified:**
+- Backend: `src/middleware/security.ts` (CSRF middleware)
+- Backend: `src/app.ts` (integrated CSRF middleware)
+- Frontend: `src/api/axios.ts` (automatic CSRF header)
+
+**Security Benefits:**
+- ✅ **CSRF Prevention:** Malicious sites cannot forge valid requests
+- ✅ **Signed Tokens:** HMAC signature prevents token forgery
+- ✅ **Timing-Safe:** Protects against timing attack vulnerabilities
+- ✅ **Automatic:** Tokens generated and validated transparently
+
+---
+
+#### ✅ Comprehensive Security Headers
+
+**The Problem:** Missing security headers leave applications vulnerable to various attacks (XSS, clickjacking, MIME sniffing, etc.).
+
+**The Solution:** Implemented comprehensive security headers via enhanced Helmet.js configuration.
+
+**Headers Implemented:**
+
+1. **Content Security Policy (CSP):**
+   ```
+   default-src 'self'
+   script-src 'self'
+   style-src 'self' 'unsafe-inline'
+   img-src 'self' data: https:
+   connect-src 'self'
+   ```
+   Restricts resource loading to trusted sources only
+
+2. **HTTP Strict Transport Security (HSTS):**
+   ```
+   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+   ```
+   Forces HTTPS for 1 year, including subdomains
+
+3. **X-Frame-Options:**
+   ```
+   X-Frame-Options: DENY
+   ```
+   Prevents clickjacking by blocking iframe embedding
+
+4. **X-Content-Type-Options:**
+   ```
+   X-Content-Type-Options: nosniff
+   ```
+   Prevents MIME type sniffing attacks
+
+5. **Referrer-Policy:**
+   ```
+   Referrer-Policy: strict-origin-when-cross-origin
+   ```
+   Limits referrer information leakage
+
+6. **Permissions-Policy:**
+   ```
+   camera=(), microphone=(), geolocation=(), payment=()
+   ```
+   Disables unnecessary browser features
+
+**Files Modified:**
+- Backend: `src/middleware/security.ts` (enhanced Helmet configuration)
+- Backend: `src/config/security.ts` (security constants)
+
+**Security Benefits:**
+- ✅ **XSS Mitigation:** CSP blocks inline scripts and unauthorized sources
+- ✅ **Clickjacking Prevention:** X-Frame-Options blocks iframe attacks
+- ✅ **HTTPS Enforcement:** HSTS forces secure connections
+- ✅ **Attack Surface Reduction:** Permissions-Policy disables unnecessary features
+
+---
+
+#### ✅ Enhanced CORS Configuration
+
+**Updated CORS Settings:**
+```typescript
+{
+  origin: process.env.CLIENT_URL,
+  credentials: true,                    // ✅ Allow cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  exposedHeaders: ['X-CSRF-Token'],     // ✅ Frontend can read CSRF token
+  maxAge: 86400                          // ✅ Cache preflight 24 hours
+}
+```
+
+**Files Modified:**
+- Backend: `src/app.ts`, `src/config/security.ts`
+
+---
+
+#### 🔧 Additional Backend Security
+
+1. **Helmet** - Comprehensive security headers (CSP, HSTS, etc.)
+2. **CORS** - Configured for cookie-based authentication
 3. **Rate Limiting** - 5 login attempts per 15 minutes per IP
-4. **XSS Protection** - Input sanitization
+4. **XSS Protection** - Input sanitization middleware
 5. **NoSQL Injection Prevention** - Query parameter validation
 6. **Password Hashing** - bcrypt with 12 salt rounds
-7. **JWT Tokens** - Short-lived access tokens (15 min) with refresh tokens (7 days)
+7. **JWT Tokens** - Short-lived access (15 min) with refresh tokens (7 days)
 8. **Input Validation** - Zod schemas validate all inputs
+9. **Request Size Limits** - 10kb limit to prevent DoS
+10. **Cookie Security** - Secure, sameSite, httpOnly flags
 
-### Frontend Security
+#### 🔧 Additional Frontend Security
 
-1. **Protected Routes** - Authentication required for comment actions
-2. **Token Storage** - Tokens stored in localStorage (consider httpOnly cookies for production)
-3. **Automatic Token Refresh** - Axios interceptor refreshes expired tokens
-4. **XSS Prevention** - React's built-in XSS protection
+1. **Protected Routes** - Authentication required for actions
+2. **Automatic Token Refresh** - Seamless token renewal via cookies
+3. **CSRF Token Management** - Automatic inclusion in requests
+4. **XSS Prevention** - React's built-in protection + CSP
+5. **Secure Axios Configuration** - withCredentials enabled
+6. **No Token Storage** - Zero tokens in localStorage or sessionStorage
+
+---
+
+### 📊 Security Implementation Summary
+
+| Security Feature | Implementation | Protection Against |
+|-----------------|----------------|---------------------|
+| **HttpOnly Cookies** | Tokens in httpOnly cookies | XSS attacks, token theft |
+| **CSRF Protection** | Double-submit + HMAC | Cross-site request forgery |
+| **Content Security Policy** | Strict CSP directives | XSS, data injection |
+| **HSTS** | 1-year HSTS header | Protocol downgrade attacks |
+| **Rate Limiting** | 5 auth attempts/15min | Brute force attacks |
+| **Input Validation** | Zod schemas | Injection attacks |
+| **Password Hashing** | bcrypt (12 rounds) | Password compromise |
+| **Token Expiry** | 15min access, 7d refresh | Session hijacking |
+| **CORS** | Strict origin validation | Unauthorized origins |
+| **XSS Protection** | Input sanitization + CSP | Script injection |
+
+---
+
+### 🔐 Updated Environment Variables (Security)
+
+#### Backend Security Configuration
+
+Add these to your `backend/.env`:
+
+```env
+# JWT Secrets (REQUIRED - Generate with crypto.randomBytes(32).toString('hex'))
+JWT_SECRET=<64-character-hex-string>
+JWT_REFRESH_SECRET=<64-character-hex-string>
+
+# CSRF Secret (REQUIRED - Generate with crypto.randomBytes(32).toString('hex'))
+CSRF_SECRET=<64-character-hex-string>
+
+# Environment (affects cookie security)
+NODE_ENV=production  # Use 'development' for local testing
+
+# Client URL for CORS (support multiple origins with comma separation)
+CLIENT_URL=http://localhost:5173,https://your-app.vercel.app
+```
+
+**Generate Secure Secrets:**
+```bash
+# Run these in your terminal to generate cryptographically secure secrets
+node -e "console.log('JWT_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
+node -e "console.log('JWT_REFRESH_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
+node -e "console.log('CSRF_SECRET=' + require('crypto').randomBytes(32).toString('hex'))"
+```
+
+**Security Notes:**
+- ✅ Secrets must be at least 32 characters (64 hex characters)
+- ✅ Use different secrets for each environment (dev, staging, prod)
+- ✅ Never commit `.env` files to version control
+- ✅ Rotate secrets periodically (every 90 days recommended)
+- ✅ Store production secrets in secure vaults (AWS Secrets Manager, etc.)
+
+---
+
+### 📖 Security Documentation
+
+For comprehensive security documentation:
+- **Backend Security Guide:** `backend/SECURITY.md`
+- **Frontend Security Guide:** `frontend/SECURITY.md`
+
+Both documents include:
+- Detailed implementation explanations
+- Security testing procedures
+- Threat modeling
+- Incident response procedures
+- Regular maintenance checklists
 
 ## Development Scripts
 
@@ -794,15 +1082,18 @@ JWT_SECRET=your-production-secret-min-32-characters
 JWT_REFRESH_SECRET=your-production-refresh-secret-min-32-characters
 JWT_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
+CSRF_SECRET=your-production-csrf-secret-min-32-characters
 CLIENT_URL=http://localhost:5173,https://your-frontend-url.vercel.app
 NODE_ENV=production
 ```
 
 **Important Notes:**
-- Use **production-grade** secrets (generate with `crypto.randomBytes(32).toString('hex')`)
+- Use **production-grade** secrets (generate with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
+- Generate THREE different secrets: `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `CSRF_SECRET`
 - `CLIENT_URL` can support multiple origins (comma-separated) for local + production
 - **DO NOT** set `PORT` - Render sets it automatically
 - Get `MONGODB_URI` from MongoDB Atlas
+- All secrets should be at least 64 hex characters (32 bytes)
 
 #### 5. Deploy
 - Click "Create Web Service"
@@ -875,11 +1166,16 @@ After deployment, verify everything works:
 ### Production Considerations
 
 #### Security
-- ✅ Use strong, unique JWT secrets (32+ characters)
-- ✅ Never commit `.env` files to Git
-- ✅ Enable HTTPS (automatic on Vercel/Render)
-- ✅ Keep dependencies updated
+- ✅ Use strong, unique secrets for JWT and CSRF (64 hex characters / 32 bytes)
+- ✅ Generate different secrets for each environment (dev, staging, prod)
+- ✅ Never commit `.env` files to Git (.gitignore configured)
+- ✅ Enable HTTPS (automatic on Vercel/Render, required for secure cookies)
+- ✅ HttpOnly cookies enabled (prevents XSS token theft)
+- ✅ CSRF protection enabled (prevents cross-site attacks)
+- ✅ Comprehensive security headers (CSP, HSTS, X-Frame-Options, etc.)
+- ✅ Keep dependencies updated (`npm audit` regularly)
 - ✅ Use environment-specific MongoDB databases
+- ✅ Rotate secrets periodically (every 90 days recommended)
 
 #### Performance
 - ✅ Enable MongoDB Atlas connection pooling
@@ -920,12 +1216,13 @@ After deployment, verify everything works:
 | Variable | Required | Example | Notes |
 |----------|----------|---------|-------|
 | `MONGODB_URI` | Yes | `mongodb+srv://...` | MongoDB connection string |
-| `JWT_SECRET` | Yes | `abc123...` (32+ chars) | Access token secret |
-| `JWT_REFRESH_SECRET` | Yes | `xyz789...` (32+ chars) | Refresh token secret |
+| `JWT_SECRET` | Yes | `abc123...` (64 hex chars) | Access token secret (32 bytes) |
+| `JWT_REFRESH_SECRET` | Yes | `xyz789...` (64 hex chars) | Refresh token secret (32 bytes) |
 | `JWT_EXPIRES_IN` | Yes | `15m` | Access token expiry |
 | `JWT_REFRESH_EXPIRES_IN` | Yes | `7d` | Refresh token expiry |
+| `CSRF_SECRET` | Yes | `def456...` (64 hex chars) | CSRF token signing secret (32 bytes) |
 | `CLIENT_URL` | Yes | `https://app.vercel.app` | Frontend URL(s) for CORS |
-| `NODE_ENV` | Recommended | `production` | Environment mode |
+| `NODE_ENV` | Recommended | `production` | Environment mode (affects cookie security) |
 | `PORT` | No | (auto-set by Render) | Server port |
 
 #### Frontend Environment Variables

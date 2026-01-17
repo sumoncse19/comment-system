@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import type { User, LoginCredentials, RegisterCredentials } from '../types';
 import { authApi } from '../api/authApi';
 import type { AxiosError } from 'axios';
+import { STORAGE_KEYS, clearAuthData } from '../config/security';
 
 interface AuthContextType {
   user: User | null;
@@ -42,19 +43,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Check for existing session on mount
   useEffect(() => {
     const initAuth = async () => {
-      const accessToken = localStorage.getItem('accessToken');
-      const storedUser = localStorage.getItem('user');
+      const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
 
-      if (accessToken && storedUser) {
+      // If we have stored user data, verify the session is still valid
+      // Access token is in httpOnly cookie, so backend will validate it
+      if (storedUser) {
         try {
-          // Verify token is still valid
+          // Verify token is still valid (cookie sent automatically)
           const response = await authApi.getMe();
           setUser(response.data.user);
         } catch {
-          // Token invalid - clear storage
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('user');
+          // Token invalid or expired - clear user data
+          clearAuthData();
         }
       }
       setIsLoading(false);
@@ -69,12 +69,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     try {
       const response = await authApi.login(credentials);
-      const { user, accessToken, refreshToken } = response.data;
+      const { user } = response.data;
 
-      // Store tokens and user
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(user));
+      // Store user data only (tokens are in httpOnly cookies)
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
       setUser(user);
     } catch (err) {
@@ -93,12 +91,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     try {
       const response = await authApi.register(credentials);
-      const { user, accessToken, refreshToken } = response.data;
+      const { user } = response.data;
 
-      // Store tokens and user
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(user));
+      // Store user data only (tokens are in httpOnly cookies)
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
       setUser(user);
     } catch (err) {
@@ -114,13 +110,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = async () => {
     try {
       await authApi.logout();
-    } catch {
-      // Ignore logout errors
+    } catch (error) {
+      // Log logout errors for debugging but don't block logout
+      console.error('Logout API call failed:', error);
     } finally {
       // Clear storage and state
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
+      clearAuthData();
       setUser(null);
     }
   };

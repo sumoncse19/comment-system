@@ -1,5 +1,6 @@
 import express, { Application, Request, Response } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 
 // Middleware imports
@@ -9,10 +10,14 @@ import {
   apiLimiter,
   xssProtection,
   noSqlInjectionProtection,
+  csrfTokenGenerator,
+  csrfProtection,
+  additionalSecurityHeaders,
 } from './middleware/security';
 
 // Config imports
 import swaggerSpec from './config/swagger';
+import { CORS_OPTIONS } from './config/security';
 
 // Route imports
 import authRoutes from './routes/authRoutes';
@@ -22,12 +27,13 @@ const app: Application = express();
 
 // ==================== Security Middleware ====================
 app.use(helmetMiddleware);
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(additionalSecurityHeaders);
+
+// CORS with credentials (allows cookies)
+app.use(cors(CORS_OPTIONS));
+
+// ==================== Cookie Parser ====================
+app.use(cookieParser());
 
 // ==================== Body Parsing Middleware ====================
 app.use(express.json({ limit: '10kb' }));
@@ -36,6 +42,13 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 // ==================== Custom Security Middleware ====================
 app.use(xssProtection);
 app.use(noSqlInjectionProtection);
+
+// ==================== CSRF Protection ====================
+// Generate CSRF token for GET requests
+app.use(csrfTokenGenerator);
+
+// Validate CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
+app.use(csrfProtection);
 
 // ==================== Rate Limiting ====================
 app.use('/api', apiLimiter);
