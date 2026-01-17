@@ -12,6 +12,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
 
+// Strong password regex: at least 1 uppercase, 1 lowercase, 1 number, 1 special character
+const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+
 const registerSchema = z.object({
   username: z
     .string()
@@ -19,7 +22,13 @@ const registerSchema = z.object({
     .max(30, 'Username cannot exceed 30 characters')
     .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(
+      strongPasswordRegex,
+      'Password must contain uppercase, lowercase, number, and special character (@$!%*?&)'
+    ),
   confirmPassword: z.string().min(1, 'Please confirm your password'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
@@ -136,7 +145,7 @@ const Register = () => {
                           />
                         </FormControl>
                         <FormDescription>
-                          Must be at least 6 characters
+                          Min 8 chars with uppercase, lowercase, number & special character
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

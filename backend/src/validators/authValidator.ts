@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// Strong password regex: at least 1 uppercase, 1 lowercase, 1 number, 1 special character
+const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+
 // Register validation schema
 export const registerSchema = z.object({
   username: z
@@ -18,8 +21,12 @@ export const registerSchema = z.object({
     .trim(),
   password: z
     .string({ message: 'Password is required' })
-    .min(6, 'Password must be at least 6 characters')
-    .max(100, 'Password cannot exceed 100 characters'),
+    .min(8, 'Password must be at least 8 characters')
+    .max(100, 'Password cannot exceed 100 characters')
+    .regex(
+      strongPasswordRegex,
+      'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)'
+    ),
 });
 
 // Login validation schema
