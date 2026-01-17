@@ -1,17 +1,30 @@
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './components/theme-provider';
 import { Toaster } from './components/ui/sonner';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Home from './pages/Home';
+import { useAppDispatch, useAppSelector } from './store/hooks';
+import { initializeAuth, selectIsAuthenticated, selectAuthLoading } from './store/slices/authSlice';
 import './App.css';
+
+// Lazy load route components for code splitting
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Home = lazy(() => import('./pages/Home'));
+
+// Loading fallback component for route lazy loading
+const RouteLoadingFallback = () => (
+  <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] gap-4">
+    <div className="w-12 h-12 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
+    <p className="text-muted-foreground">Loading page...</p>
+  </div>
+);
 
 // Redirect authenticated users away from auth pages
 const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const isLoading = useAppSelector(selectAuthLoading);
 
   if (isLoading) {
     return (
@@ -34,45 +47,52 @@ function AppRoutes() {
     <Router>
       <Navbar />
       <main className="min-h-[calc(100vh-64px)] bg-background">
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            }
-          />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Home />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<RouteLoadingFallback />}>
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
     </Router>
   );
 }
 
 function App() {
+  const dispatch = useAppDispatch();
+
+  // Initialize auth on app mount
+  useEffect(() => {
+    dispatch(initializeAuth());
+  }, [dispatch]);
+
   return (
     <ThemeProvider defaultTheme="system" storageKey="comment-system-theme">
-      <AuthProvider>
-        <AppRoutes />
-        <Toaster />
-      </AuthProvider>
+      <AppRoutes />
+      <Toaster />
     </ThemeProvider>
   );
 }

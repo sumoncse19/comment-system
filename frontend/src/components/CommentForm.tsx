@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -103,4 +103,8 @@ const CommentForm = ({
   );
 };
 
-export default CommentForm;
+/**
+ * Memoized CommentForm component
+ * Prevents unnecessary re-renders when parent components update
+ */
+export default memo(CommentForm);

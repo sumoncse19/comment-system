@@ -1,11 +1,12 @@
-import { useAuth } from '../contexts/AuthContext';
+import { useAppSelector } from '../store/hooks';
+import { selectUser } from '../store/slices/authSlice';
 import CommentList from '../components/CommentList';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { User, Mail, Calendar } from 'lucide-react';
 
 const Home = () => {
-  const { user } = useAuth();
+  const user = useAppSelector(selectUser);
 
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4 space-y-8">

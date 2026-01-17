@@ -12,9 +12,13 @@ export interface CommentEventPayload {
 }
 
 export const initializeSocket = (httpServer: HttpServer): Server => {
+  // Parse CLIENT_URL to support multiple origins (comma-separated)
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const allowedOrigins = clientUrl.split(',').map((url) => url.trim());
+
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:5173',
+      origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },

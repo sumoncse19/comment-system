@@ -1,9 +1,31 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { Comment, PaginationMeta } from '../types';
-import { commentApi } from '../api/commentApi';
-import { useAuth } from '../contexts/AuthContext';
+import { useEffect, useCallback, useRef } from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import {
+  fetchComments,
+  createComment,
+  updateComment,
+  deleteComment,
+  likeComment,
+  dislikeComment,
+  setPage,
+  setSort,
+  setPageId,
+  addCommentFromSocket,
+  addReplyFromSocket,
+  updateCommentFromSocket,
+  deleteCommentFromSocket,
+  updateReactionFromSocket,
+  optimisticLike,
+  optimisticDislike,
+  selectComments,
+  selectPagination,
+  selectCommentsLoading,
+  selectCommentsError,
+  selectCurrentPage,
+  selectSort,
+} from '../store/slices/commentsSlice';
+import { selectIsAuthenticated } from '../store/slices/authSlice';
 import { useSocket } from '../hooks/useSocket';
-import { toast } from 'sonner';
 import type {
   CommentCreatedPayload,
   ReplyCreatedPayload,
@@ -27,173 +49,111 @@ interface CommentListProps {
 type SortOption = 'newest' | 'mostLiked' | 'mostDisliked';
 
 const CommentList = ({ pageId }: CommentListProps) => {
-  const { isAuthenticated } = useAuth();
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
-  const [sort, setSort] = useState<SortOption>('newest');
-  const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const comments = useAppSelector(selectComments);
+  const pagination = useAppSelector(selectPagination);
+  const sort = useAppSelector(selectSort);
+  const page = useAppSelector(selectCurrentPage);
+  const isLoading = useAppSelector(selectCommentsLoading);
+  const error = useAppSelector(selectCommentsError);
 
-  // Socket event handlers
+  // Track if we're currently creating a comment (to handle socket events correctly)
+  const isCreatingCommentRef = useRef(false);
+
+  // Set pageId when component mounts
+  useEffect(() => {
+    dispatch(setPageId(pageId));
+  }, [dispatch, pageId]);
+
+  // Socket event handlers - dispatch Redux actions
   const handleSocketCommentCreated = useCallback(
     (payload: CommentCreatedPayload) => {
+      // If we're the one creating the comment, just add it directly
+      // (we've already navigated to page 1)
+      if (isCreatingCommentRef.current) {
+        dispatch(addCommentFromSocket(payload.comment));
+        return;
+      }
+
+      // For other users: if on page 1 with newest sort, add comment directly
       if (page === 1 && sort === 'newest') {
-        setComments((prev) => {
-          const newComments = [payload.comment, ...prev];
-          // Keep only the page limit (10 items)
-          return newComments.slice(0, 10);
-        });
-        setPagination((prev) => {
-          if (!prev) return prev;
-          const newTotalItems = prev.totalItems + 1;
-          const newTotalPages = Math.ceil(newTotalItems / prev.itemsPerPage);
-          return {
-            ...prev,
-            totalItems: newTotalItems,
-            totalPages: newTotalPages,
-            hasNextPage: prev.currentPage < newTotalPages,
-          };
-        });
+        dispatch(addCommentFromSocket(payload.comment));
       } else {
-        // Not on page 1 or not sorting by newest, just update pagination
-        setPagination((prev) => {
-          if (!prev) return prev;
-          const newTotalItems = prev.totalItems + 1;
-          const newTotalPages = Math.ceil(newTotalItems / prev.itemsPerPage);
-          return {
-            ...prev,
-            totalItems: newTotalItems,
-            totalPages: newTotalPages,
-            hasNextPage: prev.currentPage < newTotalPages,
-          };
-        });
+        // For other pages/sorts, refetch to get correct data
+        // (new comment shifts pagination)
+        dispatch(
+          fetchComments({
+            pageId,
+            page,
+            limit: 10,
+            sort,
+          })
+        );
       }
     },
-    [page, sort]
+    [dispatch, page, sort, pageId]
   );
 
-  const handleSocketReplyCreated = useCallback((payload: ReplyCreatedPayload) => {
-    setComments((prev) => {
-      // Recursive function to add reply at any nesting level
-      const addReplyToComment = (comment: Comment): Comment => {
-        if (comment._id === payload.parentId) {
-          return {
-            ...comment,
-            replies: [...(comment.replies || []), payload.comment],
-          };
-        }
-        // If not the parent, check nested replies
-        if (comment.replies && comment.replies.length > 0) {
-          return {
-            ...comment,
-            replies: comment.replies.map(addReplyToComment),
-          };
-        }
-        return comment;
-      };
+  const handleSocketReplyCreated = useCallback(
+    (payload: ReplyCreatedPayload) => {
+      dispatch(addReplyFromSocket({ parentId: payload.parentId, comment: payload.comment }));
+    },
+    [dispatch]
+  );
 
-      return prev.map(addReplyToComment);
-    });
-  }, []);
+  const handleSocketCommentUpdated = useCallback(
+    (payload: CommentUpdatedPayload) => {
+      dispatch(updateCommentFromSocket(payload.comment));
+    },
+    [dispatch]
+  );
 
-  const handleSocketCommentUpdated = useCallback((payload: CommentUpdatedPayload) => {
-    setComments((prev) => {
-      // Recursive function to update comment at any nesting level
-      const updateComment = (comment: Comment): Comment => {
-        if (comment._id === payload.comment._id) {
-          return { ...comment, ...payload.comment };
-        }
-        // Check nested replies
-        if (comment.replies && comment.replies.length > 0) {
-          return {
-            ...comment,
-            replies: comment.replies.map(updateComment),
-          };
-        }
-        return comment;
-      };
+  const handleSocketCommentDeleted = useCallback(
+    (payload: CommentDeletedPayload) => {
+      // For replies, just update the local state
+      if (payload.parentId) {
+        dispatch(deleteCommentFromSocket({
+          commentId: payload.commentId,
+          parentId: payload.parentId ?? undefined
+        }));
+        return;
+      }
 
-      return prev.map(updateComment);
-    });
-  }, []);
+      // For parent comments, check if we need to refetch
+      if (page === 1) {
+        // On page 1, just remove locally and update pagination
+        dispatch(deleteCommentFromSocket({
+          commentId: payload.commentId,
+          parentId: undefined
+        }));
+      } else {
+        // On other pages, refetch to get correct shifted data
+        dispatch(
+          fetchComments({
+            pageId,
+            page,
+            limit: 10,
+            sort,
+          })
+        );
+      }
+    },
+    [dispatch, page, pageId, sort]
+  );
 
-  const handleSocketCommentDeleted = useCallback((payload: CommentDeletedPayload) => {
-    if (payload.parentId) {
-      // It's a reply, just remove from the nested replies (no pagination update needed)
-      setComments((prev) => {
-        // Recursive function to delete comment at any nesting level
-        const deleteFromComment = (comment: Comment): Comment => {
-          if (comment._id === payload.parentId) {
-            return {
-              ...comment,
-              replies: comment.replies?.filter((reply) => reply._id !== payload.commentId),
-            };
-          }
-          // Check nested replies
-          if (comment.replies && comment.replies.length > 0) {
-            return {
-              ...comment,
-              replies: comment.replies.map(deleteFromComment),
-            };
-          }
-          return comment;
-        };
-
-        return prev.map(deleteFromComment);
-      });
-    } else {
-      // It's a parent comment, update pagination
-      setComments((prev) => {
-        const filtered = prev.filter((comment) => comment._id !== payload.commentId);
-        return filtered;
-      });
-
-      setPagination((prev) => {
-        if (!prev) return prev;
-        const newTotalItems = Math.max(0, prev.totalItems - 1);
-        const newTotalPages = Math.ceil(newTotalItems / prev.itemsPerPage) || 1;
-
-        // If current page is now beyond the last page, move to the last valid page
-        if (prev.currentPage > newTotalPages) {
-          setPage(newTotalPages);
-        }
-
-        return {
-          ...prev,
-          totalItems: newTotalItems,
-          totalPages: newTotalPages,
-          hasNextPage: prev.currentPage < newTotalPages,
-          hasPrevPage: prev.currentPage > 1,
-        };
-      });
-    }
-  }, []);
-
-  const handleSocketCommentReaction = useCallback((payload: CommentReactionPayload) => {
-    setComments((prev) => {
-      // Recursive function to update reaction at any nesting level
-      const updateReaction = (comment: Comment): Comment => {
-        if (comment._id === payload.comment._id) {
-          return {
-            ...comment,
-            likesCount: payload.comment.likesCount,
-            dislikesCount: payload.comment.dislikesCount,
-          };
-        }
-        // Check nested replies
-        if (comment.replies && comment.replies.length > 0) {
-          return {
-            ...comment,
-            replies: comment.replies.map(updateReaction),
-          };
-        }
-        return comment;
-      };
-
-      return prev.map(updateReaction);
-    });
-  }, []);
+  const handleSocketCommentReaction = useCallback(
+    (payload: CommentReactionPayload) => {
+      dispatch(
+        updateReactionFromSocket({
+          commentId: payload.comment._id,
+          likesCount: payload.comment.likesCount,
+          dislikesCount: payload.comment.dislikesCount,
+        })
+      );
+    },
+    [dispatch]
+  );
 
   // Initialize socket connection
   useSocket({
@@ -206,139 +166,85 @@ const CommentList = ({ pageId }: CommentListProps) => {
     onCommentDisliked: handleSocketCommentReaction,
   });
 
-  const fetchComments = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await commentApi.getComments({
+  // Fetch comments when page, sort, or pageId changes
+  useEffect(() => {
+    dispatch(
+      fetchComments({
         pageId,
         page,
         limit: 10,
         sort,
-      });
-      setComments(response.data.data);
-      setPagination(response.data.pagination);
-    } catch (err) {
-      setError('Failed to load comments');
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [pageId, page, sort]);
+      })
+    );
+  }, [dispatch, pageId, page, sort]);
 
-  useEffect(() => {
-    fetchComments();
-  }, [fetchComments]);
+  const handleCreateComment = useCallback(async (content: string) => {
+    // Mark that we're creating a comment (prevents socket handler from interfering)
+    isCreatingCommentRef.current = true;
 
-  const handleCreateComment = async (content: string) => {
     try {
-      await commentApi.createComment({ content, pageId });
-      toast.success('Comment posted successfully!');
-      if (page !== 1) {
-        setPage(1);
+      await dispatch(createComment({ content, pageId })).unwrap();
+
+      // After creating, ensure we're on page 1 with newest sort and fetch fresh data
+      if (sort !== 'newest') {
+        dispatch(setSort('newest'));
       }
-    } catch (error) {
-      toast.error('Failed to post comment. Please try again.');
-      throw error;
+      dispatch(setPage(1));
+
+      // Fetch page 1 to show the new comment
+      await dispatch(
+        fetchComments({
+          pageId,
+          page: 1,
+          limit: 10,
+          sort: 'newest',
+        })
+      );
+    } catch {
+      // Error handled by Redux
+    } finally {
+      isCreatingCommentRef.current = false;
     }
-  };
+  }, [dispatch, pageId, sort]);
 
   const handleReply = async (parentId: string, content: string) => {
     try {
-      await commentApi.createComment({ content, pageId, parentComment: parentId });
-      toast.success('Reply posted successfully!');
+      await dispatch(createComment({ content, pageId, parentComment: parentId })).unwrap();
     } catch (error) {
-      toast.error('Failed to post reply. Please try again.');
       throw error;
     }
   };
 
   const handleUpdate = async (id: string, content: string) => {
     try {
-      await commentApi.updateComment(id, { content });
-      toast.success('Comment updated successfully!');
+      await dispatch(updateComment({ id, data: { content } })).unwrap();
     } catch (error) {
-      toast.error('Failed to update comment. Please try again.');
       throw error;
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await commentApi.deleteComment(id);
-      toast.success('Comment deleted successfully!');
+      await dispatch(deleteComment(id)).unwrap();
     } catch (error) {
-      toast.error('Failed to delete comment. Please try again.');
       throw error;
     }
   };
 
   const handleLike = async (id: string) => {
     // Optimistically update the UI
-    setComments((prev) => {
-      // Recursive function to update like at any nesting level
-      const updateLike = (comment: Comment): Comment => {
-        if (comment._id === id) {
-          const currentReaction = comment.userReaction;
-          const newReaction = currentReaction === 'like' ? null : 'like';
-          return {
-            ...comment,
-            userReaction: newReaction,
-            likesCount: newReaction === 'like' ? comment.likesCount + 1 : comment.likesCount - 1,
-            dislikesCount: currentReaction === 'dislike' ? comment.dislikesCount - 1 : comment.dislikesCount,
-          };
-        }
-        // Check nested replies
-        if (comment.replies && comment.replies.length > 0) {
-          return {
-            ...comment,
-            replies: comment.replies.map(updateLike),
-          };
-        }
-        return comment;
-      };
-
-      return prev.map(updateLike);
-    });
-
-    await commentApi.likeComment(id);
+    dispatch(optimisticLike(id));
+    await dispatch(likeComment(id));
   };
 
   const handleDislike = async (id: string) => {
     // Optimistically update the UI
-    setComments((prev) => {
-      // Recursive function to update dislike at any nesting level
-      const updateDislike = (comment: Comment): Comment => {
-        if (comment._id === id) {
-          const currentReaction = comment.userReaction;
-          const newReaction = currentReaction === 'dislike' ? null : 'dislike';
-          return {
-            ...comment,
-            userReaction: newReaction,
-            dislikesCount: newReaction === 'dislike' ? comment.dislikesCount + 1 : comment.dislikesCount - 1,
-            likesCount: currentReaction === 'like' ? comment.likesCount - 1 : comment.likesCount,
-          };
-        }
-        // Check nested replies
-        if (comment.replies && comment.replies.length > 0) {
-          return {
-            ...comment,
-            replies: comment.replies.map(updateDislike),
-          };
-        }
-        return comment;
-      };
-
-      return prev.map(updateDislike);
-    });
-
-    await commentApi.dislikeComment(id);
+    dispatch(optimisticDislike(id));
+    await dispatch(dislikeComment(id));
   };
 
   const handleSortChange = (newSort: SortOption) => {
-    setSort(newSort);
-    setPage(1);
+    dispatch(setSort(newSort));
   };
 
   return (
@@ -440,7 +346,7 @@ const CommentList = ({ pageId }: CommentListProps) => {
         {pagination && pagination.totalPages > 1 && (
           <div className="flex items-center justify-between pt-4 border-t">
             <Button
-              onClick={() => setPage(page - 1)}
+              onClick={() => dispatch(setPage(page - 1))}
               disabled={!pagination.hasPrevPage}
               variant="outline"
               size="sm"
@@ -452,7 +358,7 @@ const CommentList = ({ pageId }: CommentListProps) => {
               Page {pagination.currentPage} of {pagination.totalPages}
             </span>
             <Button
-              onClick={() => setPage(page + 1)}
+              onClick={() => dispatch(setPage(page + 1))}
               disabled={!pagination.hasNextPage}
               variant="outline"
               size="sm"

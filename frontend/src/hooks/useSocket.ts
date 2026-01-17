@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import type { Comment } from '../types';
 
@@ -56,63 +56,86 @@ export const useSocket = ({
   onCommentDisliked,
 }: UseSocketOptions) => {
   const socketRef = useRef<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
 
-  const connect = useCallback(() => {
-    if (socketRef.current?.connected) return;
+  // Store event handlers in refs to avoid reconnections when they change
+  const handlersRef = useRef({
+    onCommentCreated,
+    onReplyCreated,
+    onCommentUpdated,
+    onCommentDeleted,
+    onCommentLiked,
+    onCommentDisliked,
+  });
 
-    socketRef.current = io(SOCKET_URL, {
+  // Update handlers ref when they change (without reconnecting)
+  useEffect(() => {
+    handlersRef.current = {
+      onCommentCreated,
+      onReplyCreated,
+      onCommentUpdated,
+      onCommentDeleted,
+      onCommentLiked,
+      onCommentDisliked,
+    };
+  }, [onCommentCreated, onReplyCreated, onCommentUpdated, onCommentDeleted, onCommentLiked, onCommentDisliked]);
+
+  // Connection lifecycle - only depends on pageId
+  useEffect(() => {
+    // Create socket connection
+    const socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
     });
 
-    socketRef.current.on('connect', () => {
-      console.log('Socket connected:', socketRef.current?.id);
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      console.log('Socket connected:', socket.id);
+      setIsConnected(true);
       // Join the page room
-      socketRef.current?.emit('join-page', pageId);
+      socket.emit('join-page', pageId);
     });
 
-    socketRef.current.on('disconnect', () => {
+    socket.on('disconnect', () => {
       console.log('Socket disconnected');
+      setIsConnected(false);
     });
 
-    // Set up event listeners
-    if (onCommentCreated) {
-      socketRef.current.on(SOCKET_EVENTS.COMMENT_CREATED, onCommentCreated);
-    }
-    if (onReplyCreated) {
-      socketRef.current.on(SOCKET_EVENTS.REPLY_CREATED, onReplyCreated);
-    }
-    if (onCommentUpdated) {
-      socketRef.current.on(SOCKET_EVENTS.COMMENT_UPDATED, onCommentUpdated);
-    }
-    if (onCommentDeleted) {
-      socketRef.current.on(SOCKET_EVENTS.COMMENT_DELETED, onCommentDeleted);
-    }
-    if (onCommentLiked) {
-      socketRef.current.on(SOCKET_EVENTS.COMMENT_LIKED, onCommentLiked);
-    }
-    if (onCommentDisliked) {
-      socketRef.current.on(SOCKET_EVENTS.COMMENT_DISLIKED, onCommentDisliked);
-    }
-  }, [pageId, onCommentCreated, onReplyCreated, onCommentUpdated, onCommentDeleted, onCommentLiked, onCommentDisliked]);
+    // Set up event listeners that use the refs
+    socket.on(SOCKET_EVENTS.COMMENT_CREATED, (payload: CommentCreatedPayload) => {
+      handlersRef.current.onCommentCreated?.(payload);
+    });
 
-  const disconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.emit('leave-page', pageId);
-      socketRef.current.disconnect();
-      socketRef.current = null;
-    }
-  }, [pageId]);
+    socket.on(SOCKET_EVENTS.REPLY_CREATED, (payload: ReplyCreatedPayload) => {
+      handlersRef.current.onReplyCreated?.(payload);
+    });
 
-  useEffect(() => {
-    connect();
+    socket.on(SOCKET_EVENTS.COMMENT_UPDATED, (payload: CommentUpdatedPayload) => {
+      handlersRef.current.onCommentUpdated?.(payload);
+    });
 
+    socket.on(SOCKET_EVENTS.COMMENT_DELETED, (payload: CommentDeletedPayload) => {
+      handlersRef.current.onCommentDeleted?.(payload);
+    });
+
+    socket.on(SOCKET_EVENTS.COMMENT_LIKED, (payload: CommentReactionPayload) => {
+      handlersRef.current.onCommentLiked?.(payload);
+    });
+
+    socket.on(SOCKET_EVENTS.COMMENT_DISLIKED, (payload: CommentReactionPayload) => {
+      handlersRef.current.onCommentDisliked?.(payload);
+    });
+
+    // Cleanup on unmount or pageId change
     return () => {
-      disconnect();
+      socket.emit('leave-page', pageId);
+      socket.disconnect();
+      socketRef.current = null;
     };
-  }, [connect, disconnect]);
+  }, [pageId]); // Only reconnect when pageId changes
 
   return {
     socket: socketRef.current,
-    isConnected: socketRef.current?.connected || false,
+    isConnected,
   };
 };

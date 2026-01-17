@@ -1,5 +1,6 @@
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { register as registerUser, clearError, selectAuthError } from '../store/slices/authSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +29,8 @@ const registerSchema = z.object({
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const Register = () => {
-  const { register: registerUser, error, clearError } = useAuth();
+  const dispatch = useAppDispatch();
+  const error = useAppSelector(selectAuthError);
   const navigate = useNavigate();
 
   const form = useForm<RegisterFormValues>({
@@ -42,17 +44,17 @@ const Register = () => {
   });
 
   const onSubmit = async (data: RegisterFormValues) => {
-    clearError();
+    dispatch(clearError());
     try {
-      await registerUser({
+      await dispatch(registerUser({
         username: data.username,
         email: data.email,
         password: data.password,
-      });
+      })).unwrap();
       toast.success('Account created successfully! Welcome aboard.');
       navigate('/', { replace: true });
     } catch {
-      // Error handled by context
+      // Error handled by Redux
     }
   };
 

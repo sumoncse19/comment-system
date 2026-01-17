@@ -77,3 +77,14 @@ body {
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 
+/* Performance optimizations for animated elements */
+.animate-spin,
+.animate-pulse {
+  will-change: transform, opacity;
+}
+
+/* Optimize card rendering */
+[data-slot="card"] {
+  contain: layout style;
+}
+

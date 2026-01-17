@@ -1,5 +1,6 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { login, clearError, selectAuthError } from '../store/slices/authSlice';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +20,8 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const { login, error, clearError } = useAuth();
+  const dispatch = useAppDispatch();
+  const error = useAppSelector(selectAuthError);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -34,13 +36,13 @@ const Login = () => {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    clearError();
+    dispatch(clearError());
     try {
-      await login(data);
+      await dispatch(login(data)).unwrap();
       toast.success('Welcome back! Login successful.');
       navigate(from, { replace: true });
     } catch {
-      // Error handled by context
+      // Error handled by Redux
     }
   };
 

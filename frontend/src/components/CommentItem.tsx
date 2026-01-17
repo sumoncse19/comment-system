@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import type { Comment } from '../types';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppSelector } from '../store/hooks';
+import { selectUser, selectIsAuthenticated } from '../store/slices/authSlice';
 import CommentForm from './CommentForm';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +18,26 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { ThumbsUp, ThumbsDown, Reply, Edit2, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+
+/**
+ * Format date relative to now (moved outside component to avoid recreation on each render)
+ */
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return 'just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+  });
+};
 
 interface CommentItemProps {
   comment: Comment;
@@ -37,7 +58,8 @@ const CommentItem = ({
   onReply,
   depth = 0,
 }: CommentItemProps) => {
-  const { user, isAuthenticated } = useAuth();
+  const user = useAppSelector(selectUser);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const [isEditing, setIsEditing] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -54,23 +76,6 @@ const CommentItem = ({
     if (!isCollapsed && isReplying) {
       setIsReplying(false);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-    if (diffInSeconds < 60) return 'just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
-
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-    });
   };
 
   const handleUpdate = async (content: string) => {
@@ -285,4 +290,26 @@ const CommentItem = ({
   );
 };
 
-export default CommentItem;
+/**
+ * Memoized CommentItem component to prevent unnecessary re-renders
+ * Only re-renders when comment data changes (not when parent re-renders)
+ */
+export default memo(CommentItem, (prevProps, nextProps) => {
+  // Return true if props are equal (skip re-render)
+  // Return false if props changed (re-render needed)
+
+  const commentEqual =
+    prevProps.comment._id === nextProps.comment._id &&
+    prevProps.comment.content === nextProps.comment.content &&
+    prevProps.comment.likesCount === nextProps.comment.likesCount &&
+    prevProps.comment.dislikesCount === nextProps.comment.dislikesCount &&
+    prevProps.comment.userReaction === nextProps.comment.userReaction &&
+    prevProps.comment.isEdited === nextProps.comment.isEdited &&
+    prevProps.comment.updatedAt === nextProps.comment.updatedAt &&
+    prevProps.comment.replies?.length === nextProps.comment.replies?.length;
+
+  const depthEqual = prevProps.depth === nextProps.depth;
+
+  // Functions are stable (from parent), so we don't need to compare them
+  return commentEqual && depthEqual;
+});

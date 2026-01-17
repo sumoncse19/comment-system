@@ -1,15 +1,18 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { logout, selectUser, selectIsAuthenticated } from '../store/slices/authSlice';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { MessageSquare, LogOut, User } from 'lucide-react';
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(selectUser);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await logout();
+    await dispatch(logout());
     navigate('/login');
   };
 
