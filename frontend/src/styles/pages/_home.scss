@@ -1,0 +1,138 @@
+// ============================================
+// HOME PAGE STYLES
+// ============================================
+
+@use '../variables' as *;
+@use '../mixins' as *;
+
+// ============================================
+// HOME CONTAINER
+// ============================================
+.home {
+  @include container;
+  padding-top: $spacing-6;
+  padding-bottom: $spacing-6;
+
+  @include md {
+    padding-top: $spacing-8;
+    padding-bottom: $spacing-8;
+  }
+}
+
+// ============================================
+// HOME HEADER
+// ============================================
+.home__header {
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: $spacing-4;
+  margin-bottom: $spacing-6;
+}
+
+.home__title {
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  letter-spacing: $tracking-tight;
+
+  @include md {
+    font-size: $font-size-3xl;
+  }
+}
+
+.home__stats {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+}
+
+// ============================================
+// COMMENTS SECTION
+// ============================================
+.comments-section {
+  @include flex-col;
+  gap: $spacing-6;
+}
+
+// ============================================
+// COMMENTS HEADER
+// ============================================
+.comments__header {
+  @include flex-between;
+  flex-wrap: wrap;
+  gap: $spacing-4;
+}
+
+.comments__title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+}
+
+.comments__count {
+  font-size: $font-size-sm;
+  color: var(--color-muted-foreground);
+}
+
+// ============================================
+// COMMENTS SORT
+// ============================================
+.comments__sort {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+}
+
+.comments__sort-label {
+  font-size: $font-size-sm;
+  color: var(--color-muted-foreground);
+}
+
+.comments__sort-select {
+  @include input-base;
+  width: auto;
+  height: 2.25rem;
+  padding: $spacing-1-5 $spacing-3;
+  font-size: $font-size-sm;
+  cursor: pointer;
+  background-color: var(--color-background);
+
+  &:focus {
+    border-color: var(--color-ring);
+  }
+}
+
+// ============================================
+// EMPTY STATE
+// ============================================
+.comments__empty {
+  @include flex-col-center;
+  gap: $spacing-4;
+  padding: $spacing-12 $spacing-4;
+  text-align: center;
+  color: var(--color-muted-foreground);
+}
+
+.comments__empty-icon {
+  width: 4rem;
+  height: 4rem;
+  color: var(--color-muted-foreground);
+  opacity: 0.5;
+}
+
+.comments__empty-title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-medium;
+  color: var(--color-foreground);
+}
+
+.comments__empty-description {
+  font-size: $font-size-sm;
+  max-width: 20rem;
+}
+
+// ============================================
+// LOAD MORE
+// ============================================
+.comments__load-more {
+  @include flex-center;
+  padding: $spacing-4;
+}

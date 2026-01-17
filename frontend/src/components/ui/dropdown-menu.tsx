@@ -2,7 +2,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const DropdownMenu = ({ children }: { children: React.ReactNode }) => {
-  return <div className="relative inline-block text-left">{children}</div>
+  return <div className="dropdown">{children}</div>
 }
 
 const DropdownMenuTrigger = React.forwardRef<
@@ -11,7 +11,7 @@ const DropdownMenuTrigger = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <button
     ref={ref}
-    className={cn("inline-flex items-center justify-center", className)}
+    className={cn("dropdown__trigger", className)}
     {...props}
   >
     {children}
@@ -26,8 +26,8 @@ const DropdownMenuContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "absolute z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md mt-2",
-      align === 'end' ? 'right-0' : 'left-0',
+      "dropdown__menu dropdown__menu--bottom",
+      align === 'end' ? 'dropdown__menu--right' : 'dropdown__menu--left',
       className
     )}
     {...props}
@@ -37,12 +37,13 @@ DropdownMenuContent.displayName = "DropdownMenuContent"
 
 const DropdownMenuItem = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & { destructive?: boolean }
+>(({ className, destructive, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+      "dropdown__item",
+      destructive && "dropdown__item--destructive",
       className
     )}
     {...props}
@@ -50,4 +51,16 @@ const DropdownMenuItem = React.forwardRef<
 ))
 DropdownMenuItem.displayName = "DropdownMenuItem"
 
-export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem }
+const DropdownMenuSeparator = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("dropdown__separator", className)}
+    {...props}
+  />
+))
+DropdownMenuSeparator.displayName = "DropdownMenuSeparator"
+
+export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator }

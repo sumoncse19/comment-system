@@ -99,27 +99,31 @@ const CommentItem = ({
   };
 
   return (
-    <Card className={`${depth > 0 ? 'ml-8 border-l-2 border-l-primary bg-secondary/20' : ''} transition-all`}>
+    <Card className={`comment ${depth > 0 ? 'comment--reply' : ''} transition`}>
       <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center text-primary-foreground font-semibold text-sm flex-shrink-0">
+        <div className="comment__header">
+          <div className="comment__author">
+            <div className="avatar avatar--md">
               {comment.author.avatar ? (
                 <img
                   src={comment.author.avatar}
                   alt={comment.author.username}
-                  className="w-full h-full rounded-full object-cover"
+                  className="avatar__image"
                 />
               ) : (
-                comment.author.username.charAt(0).toUpperCase()
+                <div className="avatar__fallback">
+                  {comment.author.username.charAt(0).toUpperCase()}
+                </div>
               )}
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="comment__author-info">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm">{comment.author.username}</span>
-                <span className="text-xs text-muted-foreground">{formatDate(comment.createdAt)}</span>
+                <span className="comment__author-name">{comment.author.username}</span>
+                <span className="comment__meta">
+                  <span className="comment__time">{formatDate(comment.createdAt)}</span>
+                </span>
                 {comment.isEdited && (
-                  <Badge variant="secondary" className="text-xs py-0">
+                  <Badge variant="secondary" size="sm">
                     edited
                   </Badge>
                 )}
@@ -128,16 +132,16 @@ const CommentItem = ({
                     variant="ghost"
                     size="sm"
                     onClick={toggleCollapse}
-                    className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                    className="comment__replies-toggle"
                   >
                     {isCollapsed ? (
                       <>
-                        <ChevronRight className="h-3 w-3" />
+                        <ChevronRight style={{ width: '0.75rem', height: '0.75rem' }} />
                         {comment.replies?.length ?? 0} {(comment.replies?.length ?? 0) === 1 ? 'reply' : 'replies'}
                       </>
                     ) : (
                       <>
-                        <ChevronDown className="h-3 w-3" />
+                        <ChevronDown style={{ width: '0.75rem', height: '0.75rem' }} />
                         {comment.replies?.length ?? 0} {(comment.replies?.length ?? 0) === 1 ? 'reply' : 'replies'}
                       </>
                     )}
@@ -153,24 +157,23 @@ const CommentItem = ({
                 onClick={() => setIsEditing(true)}
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
                 title="Edit"
               >
-                <Edit2 className="h-4 w-4" />
+                <Edit2 style={{ width: '1rem', height: '1rem' }} />
               </Button>
               <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    className="text-destructive"
                     title="Delete"
                     disabled={isDeleting}
                   >
                     {isDeleting ? (
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      <div className="spinner spinner--sm" />
                     ) : (
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 style={{ width: '1rem', height: '1rem' }} />
                     )}
                   </Button>
                 </AlertDialogTrigger>
@@ -191,7 +194,7 @@ const CommentItem = ({
                     <AlertDialogAction
                       onClick={handleDelete}
                       disabled={isDeleting}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      className="btn--destructive"
                     >
                       {isDeleting ? 'Deleting...' : 'Delete'}
                     </AlertDialogAction>
@@ -211,53 +214,47 @@ const CommentItem = ({
           />
         ) : (
           <>
-            <div className="mb-3">
-              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{comment.content}</p>
+            <div className="comment__content">
+              <p>{comment.content}</p>
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t">
-              <div className="flex items-center gap-2">
-                <Button
+            <div className="comment__footer">
+              <div className="comment__reactions">
+                <button
                   onClick={() => onLike(comment._id)}
-                  variant={comment.userReaction === 'like' ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-8 gap-1.5"
+                  className={`comment__reaction-btn comment__reaction-btn--like ${comment.userReaction === 'like' ? 'comment__reaction-btn--active' : ''}`}
                   disabled={!isAuthenticated}
                   title={isAuthenticated ? 'Like' : 'Login to like'}
                 >
-                  <ThumbsUp className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium">{comment.likesCount}</span>
-                </Button>
-                <Button
+                  <ThumbsUp style={{ width: '0.875rem', height: '0.875rem' }} />
+                  <span>{comment.likesCount}</span>
+                </button>
+                <button
                   onClick={() => onDislike(comment._id)}
-                  variant={comment.userReaction === 'dislike' ? 'destructive' : 'outline'}
-                  size="sm"
-                  className="h-8 gap-1.5"
+                  className={`comment__reaction-btn comment__reaction-btn--dislike ${comment.userReaction === 'dislike' ? 'comment__reaction-btn--active' : ''}`}
                   disabled={!isAuthenticated}
                   title={isAuthenticated ? 'Dislike' : 'Login to dislike'}
                 >
-                  <ThumbsDown className="h-3.5 w-3.5" />
-                  <span className="text-xs font-medium">{comment.dislikesCount}</span>
-                </Button>
+                  <ThumbsDown style={{ width: '0.875rem', height: '0.875rem' }} />
+                  <span>{comment.dislikesCount}</span>
+                </button>
               </div>
 
               {canReply && isAuthenticated && (
-                <Button
+                <button
                   onClick={() => setIsReplying(!isReplying)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5"
+                  className="comment__reply-btn"
                 >
-                  <Reply className="h-3.5 w-3.5" />
+                  <Reply style={{ width: '0.875rem', height: '0.875rem' }} />
                   {isReplying ? 'Cancel' : 'Reply'}
-                </Button>
+                </button>
               )}
             </div>
           </>
         )}
 
         {isReplying && !isCollapsed && (
-          <div className="mt-4 pt-4 border-t">
+          <div className="comment__reply-form">
             <CommentForm
               onSubmit={handleReply}
               placeholder="Write a reply..."
@@ -271,7 +268,7 @@ const CommentItem = ({
 
       {/* Render replies */}
       {!isCollapsed && comment.replies && comment.replies.length > 0 && (
-        <div className="space-y-3 pt-3">
+        <div className="comment__replies-list p-4 pt-0">
           {comment.replies.map((reply) => (
             <CommentItem
               key={reply._id}
@@ -306,7 +303,9 @@ export default memo(CommentItem, (prevProps, nextProps) => {
     prevProps.comment.userReaction === nextProps.comment.userReaction &&
     prevProps.comment.isEdited === nextProps.comment.isEdited &&
     prevProps.comment.updatedAt === nextProps.comment.updatedAt &&
-    prevProps.comment.replies?.length === nextProps.comment.replies?.length;
+    // Compare replies by reference, not just length
+    // This ensures re-render when nested replies change
+    prevProps.comment.replies === nextProps.comment.replies;
 
   const depthEqual = prevProps.depth === nextProps.depth;
 

@@ -55,6 +55,7 @@ export interface TokenResponse {
 
 export interface UserResponse {
   user: User;
+  csrfToken: string;
 }
 
 // Comment types

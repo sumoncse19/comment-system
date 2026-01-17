@@ -1,0 +1,187 @@
+// ============================================
+// INPUT COMPONENT STYLES
+// ============================================
+
+@use '../variables' as *;
+@use '../mixins' as *;
+
+// ============================================
+// BASE INPUT
+// ============================================
+.input {
+  @include input-base;
+  height: 2.5rem; // h-10
+
+  // File input
+  &[type="file"] {
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-size: $font-size-sm;
+
+    &::file-selector-button {
+      @include button-base;
+      background-color: transparent;
+      border: 1px solid var(--color-input);
+      padding: $spacing-1 $spacing-2-5;
+      margin-right: $spacing-2;
+      font-size: $font-size-sm;
+      color: var(--color-foreground);
+
+      &:hover {
+        background-color: var(--color-accent);
+      }
+    }
+  }
+}
+
+// ============================================
+// TEXTAREA
+// ============================================
+.textarea {
+  @include input-base;
+  min-height: 5rem; // min-h-20
+  padding: $spacing-2 $spacing-3;
+  resize: vertical;
+
+  // Auto-resize textarea
+  &--auto {
+    resize: none;
+    overflow: hidden;
+  }
+}
+
+// ============================================
+// INPUT VARIANTS
+// ============================================
+
+// Error state
+.input--error,
+.textarea--error {
+  border-color: var(--color-destructive);
+
+  &:focus {
+    border-color: var(--color-destructive);
+    box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-destructive);
+  }
+}
+
+// Success state
+.input--success,
+.textarea--success {
+  border-color: var(--color-success);
+
+  &:focus {
+    border-color: var(--color-success);
+    box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-success);
+  }
+}
+
+// ============================================
+// FORM LABEL
+// ============================================
+.label {
+  @include form-label;
+  display: block;
+  margin-bottom: $spacing-2;
+
+  // Required indicator
+  &--required::after {
+    content: ' *';
+    color: var(--color-destructive);
+  }
+}
+
+// ============================================
+// FORM GROUP
+// ============================================
+.form-group {
+  margin-bottom: $spacing-4;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// ============================================
+// FORM ERROR MESSAGE
+// ============================================
+.form-error {
+  @include error-message;
+  display: block;
+  margin-top: $spacing-1;
+}
+
+// ============================================
+// FORM HELPER TEXT
+// ============================================
+.form-helper {
+  font-size: $font-size-sm;
+  color: var(--color-muted-foreground);
+  margin-top: $spacing-1;
+}
+
+// ============================================
+// INPUT GROUP (with icon or addon)
+// ============================================
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .input {
+    flex: 1;
+  }
+
+  // Left icon
+  &__icon-left {
+    position: absolute;
+    left: $spacing-3;
+    color: var(--color-muted-foreground);
+    pointer-events: none;
+
+    + .input {
+      padding-left: $spacing-10;
+    }
+  }
+
+  // Right icon
+  &__icon-right {
+    position: absolute;
+    right: $spacing-3;
+    color: var(--color-muted-foreground);
+    pointer-events: none;
+  }
+
+  .input:has(+ .input-group__icon-right) {
+    padding-right: $spacing-10;
+  }
+}
+
+// ============================================
+// CHECKBOX & RADIO
+// ============================================
+.checkbox,
+.radio {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  cursor: pointer;
+
+  input {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+  }
+
+  span {
+    font-size: $font-size-sm;
+    color: var(--color-foreground);
+  }
+
+  &:has(input:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

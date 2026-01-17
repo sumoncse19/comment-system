@@ -1,0 +1,337 @@
+// ============================================
+// COMMENT COMPONENT STYLES
+// ============================================
+
+@use '../variables' as *;
+@use '../mixins' as *;
+
+// ============================================
+// COMMENT FORM
+// ============================================
+.comment-form {
+  @include card-base;
+  padding: $spacing-4;
+
+  @include md {
+    padding: $spacing-6;
+  }
+}
+
+.comment-form__inner {
+  @include flex-col;
+  gap: $spacing-4;
+}
+
+.comment-form__header {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-3;
+}
+
+.comment-form__input-wrapper {
+  flex: 1;
+}
+
+.comment-form__textarea {
+  @include input-base;
+  min-height: 5rem;
+  resize: vertical;
+
+  &:focus {
+    min-height: 6rem;
+  }
+}
+
+.comment-form__footer {
+  @include flex-between;
+}
+
+.comment-form__char-count {
+  font-size: $font-size-xs;
+  color: var(--color-muted-foreground);
+
+  &--warning {
+    color: rgb(245, 158, 11);
+  }
+
+  &--error {
+    color: var(--color-destructive);
+  }
+}
+
+.comment-form__actions {
+  display: flex;
+  gap: $spacing-2;
+}
+
+// ============================================
+// COMMENT LIST
+// ============================================
+.comment-list {
+  @include flex-col;
+  gap: $spacing-4;
+}
+
+// ============================================
+// COMMENT ITEM
+// ============================================
+.comment {
+  @include card-base;
+  padding: $spacing-4;
+  transition: box-shadow $transition-fast $transition-ease;
+
+  &:hover {
+    box-shadow: $shadow-sm;
+  }
+
+  // Nested/Reply comment
+  &--reply {
+    margin-left: $spacing-1;
+    border-left: 2px solid var(--color-border);
+
+    @include md {
+      margin-left: $spacing-2;
+    }
+  }
+
+  // Highlighted comment (new or edited)
+  &--highlight {
+    animation: fadeIn $transition-normal $transition-ease;
+    border-color: var(--color-primary);
+  }
+}
+
+// ============================================
+// COMMENT HEADER
+// ============================================
+.comment__header {
+  @include flex-between;
+  margin-bottom: $spacing-3;
+}
+
+.comment__author {
+  display: flex;
+  align-items: center;
+  gap: $spacing-3;
+}
+
+.comment__author-info {
+  @include flex-col;
+}
+
+.comment__author-name {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: var(--color-foreground);
+}
+
+.comment__meta {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  font-size: $font-size-xs;
+  color: var(--color-muted-foreground);
+}
+
+.comment__time {
+  display: flex;
+  align-items: center;
+  gap: $spacing-1;
+}
+
+.comment__edited {
+  font-style: italic;
+}
+
+// ============================================
+// COMMENT ACTIONS MENU
+// ============================================
+.comment__menu {
+  position: relative;
+}
+
+.comment__menu-trigger {
+  @include flex-center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: $radius-md;
+  background: transparent;
+  border: none;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition: all $transition-fast $transition-ease;
+
+  &:hover {
+    background-color: var(--color-accent);
+    color: var(--color-foreground);
+  }
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+// ============================================
+// COMMENT CONTENT
+// ============================================
+.comment__content {
+  font-size: $font-size-sm;
+  line-height: $line-height-relaxed;
+  color: var(--color-foreground);
+  margin-bottom: $spacing-3;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+
+  p {
+    margin-bottom: $spacing-2;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// ============================================
+// COMMENT FOOTER (Reactions)
+// ============================================
+.comment__footer {
+  display: flex;
+  align-items: center;
+  gap: $spacing-4;
+}
+
+.comment__reactions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-1;
+}
+
+.comment__reaction-btn {
+  @include flex-center;
+  gap: $spacing-1;
+  padding: $spacing-1 $spacing-2;
+  border-radius: $radius-md;
+  background: transparent;
+  border: none;
+  font-size: $font-size-sm;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition: all $transition-fast $transition-ease;
+
+  &:hover {
+    background-color: var(--color-accent);
+    color: var(--color-foreground);
+  }
+
+  &--active {
+    color: var(--color-primary);
+    background-color: var(--color-accent);
+  }
+
+  &--like.comment__reaction-btn--active {
+    color: var(--color-success);
+  }
+
+  &--dislike.comment__reaction-btn--active {
+    color: var(--color-destructive);
+  }
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.comment__reply-btn {
+  @include flex-center;
+  gap: $spacing-1;
+  padding: $spacing-1 $spacing-2;
+  border-radius: $radius-md;
+  background: transparent;
+  border: none;
+  font-size: $font-size-sm;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  transition: all $transition-fast $transition-ease;
+
+  &:hover {
+    background-color: var(--color-accent);
+    color: var(--color-foreground);
+  }
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+// ============================================
+// COMMENT REPLIES
+// ============================================
+.comment__replies {
+  margin-top: $spacing-4;
+  padding-top: $spacing-4;
+  border-top: 1px solid var(--color-border);
+}
+
+.comment__replies-toggle {
+  display: flex;
+  align-items: center;
+  gap: $spacing-1;
+  padding: $spacing-1 0;
+  background: transparent;
+  border: none;
+  font-size: $font-size-sm;
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: opacity $transition-fast $transition-ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+    transition: transform $transition-fast $transition-ease;
+  }
+
+  &--expanded svg {
+    transform: rotate(180deg);
+  }
+}
+
+.comment__replies-list {
+  @include flex-col;
+  gap: $spacing-3;
+  margin-top: $spacing-3;
+}
+
+// ============================================
+// COMMENT EDIT FORM
+// ============================================
+.comment__edit-form {
+  margin-bottom: $spacing-3;
+}
+
+.comment__edit-textarea {
+  @include input-base;
+  min-height: 4rem;
+  margin-bottom: $spacing-2;
+}
+
+.comment__edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-2;
+}
+
+// ============================================
+// REPLY FORM (inline)
+// ============================================
+.comment__reply-form {
+  margin-top: $spacing-4;
+  padding-top: $spacing-4;
+  border-top: 1px solid var(--color-border);
+}

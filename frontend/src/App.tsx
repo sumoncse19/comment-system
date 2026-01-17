@@ -6,7 +6,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import { useAppDispatch, useAppSelector } from './store/hooks';
 import { initializeAuth, selectIsAuthenticated, selectAuthLoading } from './store/slices/authSlice';
-import './App.css';
 
 // Lazy load route components for code splitting
 const Login = lazy(() => import('./pages/Login'));
@@ -15,9 +14,9 @@ const Home = lazy(() => import('./pages/Home'));
 
 // Loading fallback component for route lazy loading
 const RouteLoadingFallback = () => (
-  <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] gap-4">
-    <div className="w-12 h-12 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
-    <p className="text-muted-foreground">Loading page...</p>
+  <div className="layout-centered">
+    <div className="spinner spinner--lg"></div>
+    <p className="text-muted mt-4">Loading page...</p>
   </div>
 );
 
@@ -28,9 +27,11 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <div className="w-12 h-12 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
-        <p className="text-muted-foreground">Loading...</p>
+      <div className="loading-overlay">
+        <div className="flex flex-col items-center gap-4">
+          <div className="spinner spinner--lg"></div>
+          <p className="text-muted">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -46,7 +47,7 @@ function AppRoutes() {
   return (
     <Router>
       <Navbar />
-      <main className="min-h-[calc(100vh-64px)] bg-background">
+      <main className="main bg-background">
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             <Route

@@ -23,9 +23,7 @@ export default defineConfig({
           // UI component libraries (Radix UI, etc.)
           'ui-vendor': [
             '@radix-ui/react-alert-dialog',
-            'class-variance-authority',
             'clsx',
-            'tailwind-merge',
             'lucide-react',
             'next-themes',
           ],

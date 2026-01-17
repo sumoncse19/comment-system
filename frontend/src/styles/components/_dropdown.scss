@@ -1,0 +1,148 @@
+// ============================================
+// DROPDOWN COMPONENT STYLES
+// ============================================
+
+@use '../variables' as *;
+@use '../mixins' as *;
+
+// ============================================
+// DROPDOWN CONTAINER
+// ============================================
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+// ============================================
+// DROPDOWN TRIGGER
+// ============================================
+.dropdown__trigger {
+  cursor: pointer;
+}
+
+// ============================================
+// DROPDOWN MENU
+// ============================================
+.dropdown__menu {
+  position: absolute;
+  z-index: $z-index-dropdown;
+  min-width: 8rem;
+  overflow: hidden;
+  border-radius: $radius-md;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-popover);
+  color: var(--color-popover-foreground);
+  padding: $spacing-1;
+  box-shadow: $shadow-md;
+  animation: slideInDown $transition-fast $transition-ease;
+
+  // Position variants
+  &--top {
+    bottom: 100%;
+    margin-bottom: $spacing-1;
+  }
+
+  &--bottom {
+    top: 100%;
+    margin-top: $spacing-1;
+  }
+
+  &--left {
+    left: 0;
+  }
+
+  &--right {
+    right: 0;
+  }
+}
+
+// ============================================
+// DROPDOWN ITEM
+// ============================================
+.dropdown__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  width: 100%;
+  padding: $spacing-2 $spacing-2;
+  font-size: $font-size-sm;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  outline: none;
+  transition: background-color $transition-fast $transition-ease;
+  background: transparent;
+  border: none;
+  text-align: left;
+  color: inherit;
+
+  &:hover,
+  &:focus {
+    background-color: var(--color-accent);
+    color: var(--color-accent-foreground);
+  }
+
+  &:disabled,
+  &--disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  // Destructive item
+  &--destructive {
+    color: var(--color-destructive);
+
+    &:hover,
+    &:focus {
+      background-color: var(--color-destructive);
+      color: var(--color-destructive-foreground);
+    }
+  }
+
+  // With icon
+  &__icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+  }
+
+  // With shortcut
+  &__shortcut {
+    margin-left: auto;
+    font-size: $font-size-xs;
+    color: var(--color-muted-foreground);
+    letter-spacing: $tracking-widest;
+  }
+}
+
+// ============================================
+// DROPDOWN SEPARATOR
+// ============================================
+.dropdown__separator {
+  height: 1px;
+  margin: $spacing-1 (-$spacing-1);
+  background-color: var(--color-border);
+}
+
+// ============================================
+// DROPDOWN LABEL
+// ============================================
+.dropdown__label {
+  padding: $spacing-2;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  color: var(--color-muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: $tracking-wider;
+}
+
+// ============================================
+// DROPDOWN GROUP
+// ============================================
+.dropdown__group {
+  & + & {
+    margin-top: $spacing-1;
+    padding-top: $spacing-1;
+    border-top: 1px solid var(--color-border);
+  }
+}

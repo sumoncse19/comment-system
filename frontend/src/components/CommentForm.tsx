@@ -57,47 +57,43 @@ const CommentForm = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className={`space-y-3 ${isReply ? 'mt-3' : 'mb-6'}`}>
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      <Textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={`${placeholder} (Ctrl+Enter to submit)`}
-        rows={isReply ? 2 : 3}
-        disabled={isSubmitting}
-        className="resize-none"
-      />
-      <div className="flex justify-end gap-2">
-        {onCancel && (
-          <Button
-            type="button"
-            onClick={onCancel}
-            variant="outline"
-            size="sm"
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
+    <form onSubmit={handleSubmit} className={isReply ? 'comment__reply-form' : 'comment-form'}>
+      <div className="comment-form__inner">
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
-        <Button
-          type="submit"
-          size="sm"
-          disabled={isSubmitting || !content.trim()}
-        >
-          {isSubmitting ? (
-            <>
-              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-              Posting...
-            </>
-          ) : (
-            buttonText
+        <Textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={`${placeholder} (Ctrl+Enter to submit)`}
+          rows={isReply ? 2 : 3}
+          disabled={isSubmitting}
+          className="comment-form__textarea"
+        />
+        <div className="comment-form__actions flex justify-end gap-2">
+          {onCancel && (
+            <Button
+              type="button"
+              onClick={onCancel}
+              variant="outline"
+              size="sm"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
           )}
-        </Button>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isSubmitting || !content.trim()}
+            loading={isSubmitting}
+          >
+            {isSubmitting ? 'Posting...' : buttonText}
+          </Button>
+        </div>
       </div>
     </form>
   );

@@ -1,0 +1,97 @@
+// ============================================
+// CARD COMPONENT STYLES
+// ============================================
+
+@use '../variables' as *;
+@use '../mixins' as *;
+
+// ============================================
+// BASE CARD
+// ============================================
+.card {
+  @include card-base;
+  box-shadow: $shadow-sm;
+
+  // Card with no border
+  &--borderless {
+    border: none;
+  }
+
+  // Card with hover effect
+  &--hoverable {
+    transition: box-shadow $transition-fast $transition-ease, transform $transition-fast $transition-ease;
+
+    &:hover {
+      box-shadow: $shadow-md;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+// ============================================
+// CARD SECTIONS
+// ============================================
+.card__header {
+  @include flex-col;
+  gap: $spacing-1-5;
+  padding: $spacing-6;
+}
+
+.card__title {
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-semibold;
+  line-height: $line-height-none;
+  letter-spacing: $tracking-tight;
+}
+
+.card__description {
+  font-size: $font-size-sm;
+  color: var(--color-muted-foreground);
+}
+
+.card__content {
+  padding: $spacing-6;
+  padding-top: 0;
+}
+
+.card__footer {
+  @include flex-center;
+  padding: $spacing-6;
+  padding-top: 0;
+}
+
+// ============================================
+// CARD VARIANTS
+// ============================================
+
+// Compact card (less padding)
+.card--compact {
+  .card__header {
+    padding: $spacing-4;
+  }
+
+  .card__content {
+    padding: $spacing-4;
+    padding-top: 0;
+  }
+
+  .card__footer {
+    padding: $spacing-4;
+    padding-top: 0;
+  }
+}
+
+// Flat card (no shadow)
+.card--flat {
+  box-shadow: none;
+}
+
+// Interactive card
+.card--interactive {
+  cursor: pointer;
+  transition: all $transition-fast $transition-ease;
+
+  &:hover {
+    border-color: var(--color-ring);
+  }
+}

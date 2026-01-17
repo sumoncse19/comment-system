@@ -39,7 +39,12 @@ export const initializeAuth = createAsyncThunk('auth/initialize', async (_, { re
     if (storedUser) {
       // Verify token is still valid (cookie sent automatically)
       const response = await authApi.getMe();
-      return response.data.user;
+      const { user, csrfToken } = response.data;
+
+      // Restore CSRF token in memory for subsequent requests
+      setCsrfToken(csrfToken);
+
+      return { user, csrfToken };
     }
 
     return null;
@@ -137,13 +142,21 @@ const authSlice = createSlice({
       })
       .addCase(initializeAuth.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
-        state.isAuthenticated = !!action.payload;
+        if (action.payload) {
+          state.user = action.payload.user;
+          state.csrfToken = action.payload.csrfToken;
+          state.isAuthenticated = true;
+        } else {
+          state.user = null;
+          state.csrfToken = null;
+          state.isAuthenticated = false;
+        }
         state.error = null;
       })
       .addCase(initializeAuth.rejected, (state) => {
         state.isLoading = false;
         state.user = null;
+        state.csrfToken = null;
         state.isAuthenticated = false;
         state.error = null;
       });

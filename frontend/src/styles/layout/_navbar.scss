@@ -1,0 +1,132 @@
+// ============================================
+// NAVBAR LAYOUT STYLES
+// ============================================
+
+@use '../variables' as *;
+@use '../mixins' as *;
+
+// ============================================
+// NAVBAR CONTAINER
+// ============================================
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: $z-index-sticky;
+  width: 100%;
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-background);
+  @include backdrop-blur;
+  background-color: rgba($color-background-light, 0.8);
+
+  .dark & {
+    background-color: rgba($color-background-dark, 0.8);
+  }
+}
+
+// ============================================
+// NAVBAR INNER
+// ============================================
+.navbar__inner {
+  @include container;
+  @include flex-between;
+  height: 4rem; // 64px
+}
+
+// ============================================
+// NAVBAR BRAND
+// ============================================
+.navbar__brand {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: var(--color-foreground);
+  text-decoration: none;
+  transition: opacity $transition-fast $transition-ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+// ============================================
+// NAVBAR ACTIONS
+// ============================================
+.navbar__actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+
+  @include md {
+    gap: $spacing-4;
+  }
+}
+
+// ============================================
+// NAVBAR USER
+// ============================================
+.navbar__user {
+  display: flex;
+  align-items: center;
+  gap: $spacing-3;
+}
+
+.navbar__user-info {
+  display: none;
+  @include flex-col;
+  align-items: flex-end;
+
+  @include md {
+    display: flex;
+  }
+}
+
+.navbar__username {
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  color: var(--color-foreground);
+}
+
+.navbar__user-label {
+  font-size: $font-size-xs;
+  color: var(--color-muted-foreground);
+}
+
+// ============================================
+// NAVBAR THEME TOGGLE
+// ============================================
+.navbar__theme-toggle {
+  @include flex-center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: $radius-md;
+  background: transparent;
+  border: none;
+  color: var(--color-foreground);
+  cursor: pointer;
+  transition: background-color $transition-fast $transition-ease;
+
+  &:hover {
+    background-color: var(--color-accent);
+  }
+
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+// ============================================
+// NAVBAR AUTH LINKS
+// ============================================
+.navbar__auth-links {
+  display: flex;
+  align-items: center;
+  gap: $spacing-2;
+}

@@ -120,6 +120,10 @@ class AuthController {
         throw new Error('User not found');
       }
 
+      // Generate a new CSRF token for the session
+      // This ensures CSRF token is available after page refresh
+      const csrfToken = generateSignedCsrfToken();
+
       sendSuccess(
         res,
         {
@@ -130,6 +134,7 @@ class AuthController {
             avatar: user.avatar,
             createdAt: user.createdAt,
           },
+          csrfToken,
         },
         'User retrieved successfully'
       );

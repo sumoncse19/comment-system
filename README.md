@@ -31,7 +31,7 @@ A full-stack MERN (MongoDB, Express.js, React.js, Node.js) comment system with r
 - ⚙️ **Redux State Management** - Centralized state with Redux Toolkit
 - 🎯 **Code Splitting** - Lazy-loaded routes, vendor chunking (198 KB main bundle)
 - 🏎️ **Performance Optimized** - React.memo, debouncing, memory leak fixes
-- 🎯 **Modern Stack**: TypeScript, Tailwind CSS 4, shadcn/ui, React 19, Redux Toolkit
+- 🎯 **Modern Stack**: TypeScript, SCSS/Sass, Radix UI, React 19, Redux Toolkit
 
 ## 🔄 Redux State Management
 
@@ -174,16 +174,50 @@ const comments = useAppSelector(selectComments)
 - **React Router** 7.12.0 - Client-side routing
 - **Redux Toolkit** 2.11.2 - Modern Redux with simplified API
 - **React Redux** 9.2.0 - Official React bindings for Redux
-- **Tailwind CSS** 4.1.18 - Utility-first CSS framework with OKLCH color support
-- **shadcn/ui** - Beautifully designed component library (Alert, Button, Card, Input, Textarea, Badge, AlertDialog)
-- **Radix UI** - Headless UI primitives for accessible components
+- **SCSS/Sass** 1.97.2 - Professional CSS preprocessor with variables, mixins, and modular architecture
+- **Radix UI** - Headless UI primitives for accessible components (AlertDialog)
 - **lucide-react** - Icon library with 1000+ icons
 - **Axios** 1.13.2 - HTTP client with interceptors and auto token refresh
 - **Socket.io-client** 4.8.3 - Real-time bidirectional communication
 - **React Hook Form** 7.71.1 - Performant form validation
 - **Zod** 4.3.5 - TypeScript-first schema validation
 - **Sonner** 2.0.7 - Beautiful toast notifications
-- **class-variance-authority** - CSS variant utilities
+- **clsx** 2.1.1 - Utility for constructing className strings
+- **next-themes** 0.4.6 - Theme management with system preference detection
+
+### SCSS Architecture
+
+The frontend uses a modular SCSS architecture for maintainable and scalable styling:
+
+```
+styles/
+├── _variables.scss      # Design tokens (colors, spacing, typography, breakpoints)
+├── _mixins.scss         # Reusable patterns (flex-center, responsive breakpoints, etc.)
+├── _base.scss           # CSS reset and base element styles
+├── _themes.scss         # Light/dark theme CSS custom properties
+├── _animations.scss     # Keyframe animations (fadeIn, scaleIn, spin, etc.)
+├── components/          # Component styles (BEM naming)
+│   ├── _button.scss     # .btn, .btn--primary, .btn--sm
+│   ├── _card.scss       # .card, .card__header, .card__content
+│   ├── _input.scss      # .input, .textarea, .form-group
+│   ├── _modal.scss      # .modal, .modal-overlay
+│   └── ...
+├── layout/              # Layout styles
+│   ├── _app.scss        # Main app layout, containers
+│   └── _navbar.scss     # Navigation styles
+├── pages/               # Page-specific styles
+│   ├── _auth.scss       # Login/Register pages
+│   ├── _home.scss       # Home page
+│   └── _comment.scss    # Comment list and items
+└── main.scss            # Entry point + utility classes
+```
+
+**Key Features:**
+- **BEM Naming**: Block-Element-Modifier convention (`.comment__header`, `.btn--primary`)
+- **CSS Custom Properties**: Theme variables for light/dark mode switching
+- **Responsive Mixins**: `@include sm { }`, `@include md { }` for breakpoints
+- **Design Tokens**: Centralized variables for colors, spacing, typography
+- **Utility Classes**: Common utilities (`.flex`, `.gap-4`, `.text-muted`)
 
 ### Backend
 - **Node.js** 18+ - Runtime environment
@@ -240,8 +274,8 @@ Route Chunks (Lazy loaded):
 manualChunks: {
   'react-vendor': ['react', 'react-dom', 'react-router-dom'],
   'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
-  'ui-vendor': ['lucide-react', 'radix-ui', 'tailwind utilities'],
-  'form-vendor': ['react-hook-form', 'zod'],
+  'ui-vendor': ['@radix-ui/react-alert-dialog', 'clsx', 'lucide-react', 'next-themes'],
+  'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
   'utils-vendor': ['axios', 'socket.io-client', 'sonner']
 }
 ```
@@ -358,7 +392,7 @@ comment-system/
 │   │   │   ├── authApi.ts       # Authentication API calls
 │   │   │   └── commentApi.ts    # Comment API calls
 │   │   ├── components/          # Reusable components
-│   │   │   ├── ui/              # shadcn/ui components
+│   │   │   ├── ui/              # UI components (Radix-based)
 │   │   │   │   ├── alert.tsx
 │   │   │   │   ├── alert-dialog.tsx
 │   │   │   │   ├── badge.tsx
@@ -385,11 +419,38 @@ comment-system/
 │   │   │   └── slices/          # Redux slices
 │   │   │       ├── authSlice.ts     # Auth state & async thunks
 │   │   │       └── commentsSlice.ts # Comments state & socket reducers
+│   │   ├── styles/              # SCSS stylesheets (modular architecture)
+│   │   │   ├── _variables.scss      # Design tokens (colors, spacing, typography)
+│   │   │   ├── _mixins.scss         # Reusable style patterns
+│   │   │   ├── _base.scss           # CSS reset and base styles
+│   │   │   ├── _themes.scss         # Light/dark theme CSS custom properties
+│   │   │   ├── _animations.scss     # Keyframe animations
+│   │   │   ├── components/          # Component-specific styles
+│   │   │   │   ├── _index.scss
+│   │   │   │   ├── _button.scss
+│   │   │   │   ├── _card.scss
+│   │   │   │   ├── _input.scss
+│   │   │   │   ├── _alert.scss
+│   │   │   │   ├── _badge.scss
+│   │   │   │   ├── _avatar.scss
+│   │   │   │   ├── _skeleton.scss
+│   │   │   │   ├── _dropdown.scss
+│   │   │   │   └── _modal.scss
+│   │   │   ├── layout/              # Layout styles
+│   │   │   │   ├── _index.scss
+│   │   │   │   ├── _app.scss
+│   │   │   │   └── _navbar.scss
+│   │   │   ├── pages/               # Page-specific styles
+│   │   │   │   ├── _index.scss
+│   │   │   │   ├── _auth.scss
+│   │   │   │   ├── _home.scss
+│   │   │   │   └── _comment.scss
+│   │   │   └── main.scss            # Entry point + utility classes
 │   │   ├── hooks/               # Custom React hooks
 │   │   │   ├── useSocket.ts     # Socket.io hook (memory leak fixed)
 │   │   │   └── useDebounce.ts   # Debouncing utilities
 │   │   ├── lib/                 # Utility libraries
-│   │   │   └── utils.ts         # Helper functions (cn, etc.)
+│   │   │   └── utils.ts         # Helper functions (cn for classNames)
 │   │   ├── pages/               # Page components (lazy loaded)
 │   │   │   ├── Home.tsx         # Code-split route
 │   │   │   ├── Login.tsx        # Code-split route
@@ -399,14 +460,10 @@ comment-system/
 │   │   ├── utils/               # Utility functions
 │   │   │   └── csrf.ts          # CSRF token reading utility
 │   │   ├── App.tsx              # Root component with lazy routes
-│   │   ├── App.css              # Global styles
-│   │   ├── index.css            # Tailwind CSS with theme variables
 │   │   └── main.tsx             # Entry point with Redux Provider
 │   ├── SECURITY.md              # Frontend security documentation
-│   ├── components.json          # shadcn/ui configuration
 │   ├── vite.config.ts           # Vite build config with code splitting
 │   ├── package.json
-│   ├── postcss.config.js        # PostCSS configuration for Tailwind
 │   └── tsconfig.json
 │
 ├── IMPLEMENTATION_PLAN.md        # Implementation roadmap
@@ -1467,12 +1524,12 @@ For questions or support:
 This implementation goes beyond the basic requirements with several polish and quality-of-life improvements:
 
 ### 🎨 Modern UI/UX
-- **shadcn/ui Components**: Beautiful, accessible component library
-- **Tailwind CSS 4**: Latest CSS framework with OKLCH color support
-- **Dark/Light Theme**: Seamless theme switching with system preference detection
+- **Custom SCSS Architecture**: Modular stylesheets with variables, mixins, and BEM naming
+- **Radix UI Primitives**: Accessible, unstyled components for dialogs and dropdowns
+- **Dark/Light Theme**: Seamless theme switching with CSS custom properties and system preference detection
 - **Toast Notifications**: Non-intrusive success/error messages
-- **Loading States**: Smooth animations and feedback
-- **Responsive Design**: Works perfectly on all screen sizes
+- **Loading States**: Smooth CSS animations and feedback
+- **Responsive Design**: Mobile-first approach with SCSS breakpoint mixins
 
 ### ⚡ Performance
 - **Code Splitting**: Route-based lazy loading with React.lazy() reduces initial bundle by 65%
@@ -1523,6 +1580,5 @@ This implementation goes beyond the basic requirements with several polish and q
 - Socket.io documentation
 - MongoDB Atlas
 - React and TypeScript communities
-- shadcn/ui for beautiful components
 - Radix UI for accessible primitives
-- Tailwind CSS for utility-first styling
+- Sass/SCSS for professional CSS architecture

@@ -250,10 +250,10 @@ const CommentList = ({ pageId }: CommentListProps) => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="comments__header">
           <div className="flex items-center gap-2">
             <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
+              <MessageSquare style={{ width: '1.25rem', height: '1.25rem' }} />
               Comments
               {pagination && (
                 <Badge variant="secondary" className="ml-1">
@@ -261,20 +261,20 @@ const CommentList = ({ pageId }: CommentListProps) => {
                 </Badge>
               )}
             </CardTitle>
-            <Badge variant="success" className="gap-1.5">
-              <Radio className="h-3 w-3 animate-pulse" />
+            <Badge variant="success" className="flex items-center gap-1">
+              <Radio style={{ width: '0.75rem', height: '0.75rem' }} className="animate-pulse" />
               Live
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <label htmlFor="sort" className="text-sm text-muted-foreground">
+          <div className="comments__sort">
+            <label htmlFor="sort" className="comments__sort-label">
               Sort:
             </label>
             <select
               id="sort"
               value={sort}
               onChange={(e) => handleSortChange(e.target.value as SortOption)}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="comments__sort-select"
             >
               <option value="newest">Newest</option>
               <option value="mostLiked">Most Liked</option>
@@ -283,91 +283,93 @@ const CommentList = ({ pageId }: CommentListProps) => {
           </div>
         </div>
         {pagination && (
-          <CardDescription>
+          <CardDescription className="comments__count">
             Showing {comments.length} of {pagination.totalItems} comments
           </CardDescription>
         )}
       </CardHeader>
 
-      <CardContent className="space-y-6">
-        {isAuthenticated ? (
-          <CommentForm
-            onSubmit={handleCreateComment}
-            placeholder="Share your thoughts..."
-            buttonText="Post Comment"
-          />
-        ) : (
-          <Alert>
-            <AlertDescription>
-              Please{' '}
-              <Link to="/login" className="font-medium text-primary hover:underline">
-                login
-              </Link>{' '}
-              to post a comment.
-            </AlertDescription>
-          </Alert>
-        )}
+      <CardContent>
+        <div className="flex flex-col gap-6">
+          {isAuthenticated ? (
+            <CommentForm
+              onSubmit={handleCreateComment}
+              placeholder="Share your thoughts..."
+              buttonText="Post Comment"
+            />
+          ) : (
+            <Alert>
+              <AlertDescription>
+                Please{' '}
+                <Link to="/login" className="font-medium text-primary">
+                  login
+                </Link>{' '}
+                to post a comment.
+              </AlertDescription>
+            </Alert>
+          )}
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <div className="w-12 h-12 border-4 border-muted border-t-primary rounded-full animate-spin"></div>
-            <p className="text-sm text-muted-foreground">Loading comments...</p>
-          </div>
-        ) : comments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
-            <MessageSquare className="h-12 w-12 text-muted-foreground/50" />
-            <p className="text-muted-foreground">No comments yet.</p>
-            <p className="text-sm text-muted-foreground">Be the first to share your thoughts!</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {comments.map((comment) => (
-              <CommentItem
-                key={comment._id}
-                comment={comment}
-                onLike={handleLike}
-                onDislike={handleDislike}
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-                onReply={handleReply}
-                depth={0}
-              />
-            ))}
-          </div>
-        )}
+          {isLoading ? (
+            <div className="comments__empty">
+              <div className="spinner spinner--lg"></div>
+              <p className="text-sm text-muted">Loading comments...</p>
+            </div>
+          ) : comments.length === 0 ? (
+            <div className="comments__empty">
+              <MessageSquare className="comments__empty-icon" />
+              <p className="comments__empty-title">No comments yet.</p>
+              <p className="comments__empty-description">Be the first to share your thoughts!</p>
+            </div>
+          ) : (
+            <div className="comment-list">
+              {comments.map((comment) => (
+                <CommentItem
+                  key={comment._id}
+                  comment={comment}
+                  onLike={handleLike}
+                  onDislike={handleDislike}
+                  onUpdate={handleUpdate}
+                  onDelete={handleDelete}
+                  onReply={handleReply}
+                  depth={0}
+                />
+              ))}
+            </div>
+          )}
 
-        {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4 border-t">
-            <Button
-              onClick={() => dispatch(setPage(page - 1))}
-              disabled={!pagination.hasPrevPage}
-              variant="outline"
-              size="sm"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              Page {pagination.currentPage} of {pagination.totalPages}
-            </span>
-            <Button
-              onClick={() => dispatch(setPage(page + 1))}
-              disabled={!pagination.hasNextPage}
-              variant="outline"
-              size="sm"
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        )}
+          {/* Pagination */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t">
+              <Button
+                onClick={() => dispatch(setPage(page - 1))}
+                disabled={!pagination.hasPrevPage}
+                variant="outline"
+                size="sm"
+              >
+                <ChevronLeft style={{ width: '1rem', height: '1rem' }} />
+                <span className="ml-1">Previous</span>
+              </Button>
+              <span className="text-sm text-muted">
+                Page {pagination.currentPage} of {pagination.totalPages}
+              </span>
+              <Button
+                onClick={() => dispatch(setPage(page + 1))}
+                disabled={!pagination.hasNextPage}
+                variant="outline"
+                size="sm"
+              >
+                <span className="mr-1">Next</span>
+                <ChevronRight style={{ width: '1rem', height: '1rem' }} />
+              </Button>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

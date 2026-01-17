@@ -59,136 +59,133 @@ const Register = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-64px)] p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-2">
-            <div className="p-3 bg-primary/10 rounded-full">
-              <UserPlus className="w-6 h-6 text-primary" />
+    <div className="layout-centered">
+      <div className="auth">
+        <Card className="auth__card">
+          <CardHeader className="auth__header">
+            <div className="auth__icon">
+              <UserPlus />
             </div>
-          </div>
-          <CardTitle className="text-2xl text-center">Create an account</CardTitle>
-          <CardDescription className="text-center">
-            Enter your details to get started
-          </CardDescription>
-        </CardHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+            <CardTitle className="auth__title">Create an account</CardTitle>
+            <CardDescription className="auth__description">
+              Enter your details to get started
+            </CardDescription>
+          </CardHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <CardContent className="auth__content">
+                <div className="auth__form">
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
 
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Choose a username"
-                        autoComplete="username"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      3-30 characters, letters, numbers, and underscores only
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Choose a username"
+                            autoComplete="username"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          3-30 characters, letters, numbers, and underscores only
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Enter your email"
-                        autoComplete="email"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="Enter your email"
+                            autoComplete="email"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Create a password"
-                        autoComplete="new-password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Must be at least 6 characters
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Create a password"
+                            autoComplete="new-password"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Must be at least 6 characters
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Confirm your password"
-                        autoComplete="new-password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Confirm your password"
+                            autoComplete="new-password"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
 
-            <CardFooter className="flex flex-col space-y-4">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                    Creating account...
-                  </>
-                ) : (
-                  'Create Account'
-                )}
-              </Button>
+              <CardFooter className="auth__footer">
+                <div className="auth__form">
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    loading={form.formState.isSubmitting}
+                  >
+                    {form.formState.isSubmitting ? 'Creating account...' : 'Create Account'}
+                  </Button>
 
-              <p className="text-sm text-center text-muted-foreground">
-                Already have an account?{' '}
-                <Link to="/login" className="text-primary hover:underline font-medium">
-                  Sign in
-                </Link>
-              </p>
-            </CardFooter>
-          </form>
-        </Form>
-      </Card>
+                  <p className="auth__footer-text">
+                    Already have an account?{' '}
+                    <Link to="/login" className="auth__footer-link">
+                      Sign in
+                    </Link>
+                  </p>
+                </div>
+              </CardFooter>
+            </form>
+          </Form>
+        </Card>
+      </div>
     </div>
   );
 };

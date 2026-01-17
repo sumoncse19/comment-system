@@ -1,0 +1,81 @@
+// ============================================
+// THEMES - Light and Dark mode CSS Custom Properties
+// ============================================
+
+@use 'variables' as *;
+
+// ============================================
+// ROOT (Light Theme - Default)
+// ============================================
+:root {
+  // Colors
+  --color-background: #{$color-background-light};
+  --color-foreground: #{$color-foreground-light};
+  --color-card: #{$color-card-light};
+  --color-card-foreground: #{$color-card-foreground-light};
+  --color-popover: #{$color-popover-light};
+  --color-popover-foreground: #{$color-popover-foreground-light};
+  --color-primary: #{$color-primary-light};
+  --color-primary-foreground: #{$color-primary-foreground-light};
+  --color-secondary: #{$color-secondary-light};
+  --color-secondary-foreground: #{$color-secondary-foreground-light};
+  --color-muted: #{$color-muted-light};
+  --color-muted-foreground: #{$color-muted-foreground-light};
+  --color-accent: #{$color-accent-light};
+  --color-accent-foreground: #{$color-accent-foreground-light};
+  --color-destructive: #{$color-destructive-light};
+  --color-destructive-foreground: #{$color-destructive-foreground-light};
+  --color-border: #{$color-border-light};
+  --color-input: #{$color-input-light};
+  --color-ring: #{$color-ring-light};
+
+  // Success color
+  --color-success: #{$color-success};
+  --color-success-foreground: #{$color-success-foreground};
+
+  // Primary color with opacity variations
+  --color-primary-60: rgba(23, 23, 23, 0.6);
+  --color-primary-80: rgba(23, 23, 23, 0.8);
+
+  // Border radius
+  --radius: #{$radius};
+}
+
+// ============================================
+// DARK THEME
+// ============================================
+.dark {
+  --color-background: #{$color-background-dark};
+  --color-foreground: #{$color-foreground-dark};
+  --color-card: #{$color-card-dark};
+  --color-card-foreground: #{$color-card-foreground-dark};
+  --color-popover: #{$color-popover-dark};
+  --color-popover-foreground: #{$color-popover-foreground-dark};
+  --color-primary: #{$color-primary-dark};
+  --color-primary-foreground: #{$color-primary-foreground-dark};
+  --color-secondary: #{$color-secondary-dark};
+  --color-secondary-foreground: #{$color-secondary-foreground-dark};
+  --color-muted: #{$color-muted-dark};
+  --color-muted-foreground: #{$color-muted-foreground-dark};
+  --color-accent: #{$color-accent-dark};
+  --color-accent-foreground: #{$color-accent-foreground-dark};
+  --color-destructive: #{$color-destructive-dark};
+  --color-destructive-foreground: #{$color-destructive-foreground-dark};
+  --color-border: #{$color-border-dark};
+  --color-input: #{$color-input-dark};
+  --color-ring: #{$color-ring-dark};
+
+  // Primary color with opacity variations (light color in dark mode)
+  --color-primary-60: rgba(229, 229, 229, 0.6);
+  --color-primary-80: rgba(229, 229, 229, 0.8);
+}
+
+// ============================================
+// SYSTEM PREFERENCE SUPPORT (optional)
+// ============================================
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    // Only apply if not explicitly set to light
+    // This allows JavaScript to override
+  }
+}

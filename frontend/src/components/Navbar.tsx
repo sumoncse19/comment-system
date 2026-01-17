@@ -17,37 +17,42 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2 font-semibold text-xl hover:opacity-80 transition-opacity">
-          <div className="p-2 bg-primary rounded-lg">
-            <MessageSquare className="h-5 w-5 text-primary-foreground" />
+    <nav className="navbar">
+      <div className="navbar__inner">
+        <Link to="/" className="navbar__brand">
+          <div className="flex items-center justify-center p-2 bg-primary rounded-lg">
+            <MessageSquare className="text-primary-foreground" style={{ width: '1.25rem', height: '1.25rem' }} />
           </div>
           <span className="hidden sm:inline">Comment System</span>
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="navbar__actions">
           <ThemeToggle />
           {isAuthenticated ? (
             <>
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-secondary">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{user?.username}</span>
+              <div className="navbar__user hidden md:flex">
+                <div className="navbar__user-info">
+                  <span className="navbar__username">{user?.username}</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-secondary">
+                  <User style={{ width: '1rem', height: '1rem' }} className="text-muted" />
+                  <span className="text-sm font-medium">{user?.username}</span>
+                </div>
               </div>
               <Button onClick={handleLogout} variant="outline" size="sm">
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
+                <LogOut style={{ width: '1rem', height: '1rem' }} />
+                <span className="ml-2">Logout</span>
               </Button>
             </>
           ) : (
-            <>
+            <div className="navbar__auth-links">
               <Button asChild variant="ghost" size="sm">
                 <Link to="/login">Login</Link>
               </Button>
               <Button asChild size="sm">
                 <Link to="/register">Sign Up</Link>
               </Button>
-            </>
+            </div>
           )}
         </div>
       </div>

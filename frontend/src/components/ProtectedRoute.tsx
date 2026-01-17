@@ -13,9 +13,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading...</p>
+      <div className="loading-overlay">
+        <div className="flex flex-col items-center gap-4">
+          <div className="spinner spinner--lg"></div>
+          <p className="text-muted">Loading...</p>
+        </div>
       </div>
     );
   }

@@ -1,0 +1,122 @@
+// ============================================
+// MODAL/DIALOG COMPONENT STYLES
+// ============================================
+
+@use '../variables' as *;
+@use '../mixins' as *;
+
+// ============================================
+// MODAL OVERLAY
+// ============================================
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: $z-index-modal-backdrop;
+  background-color: rgba(0, 0, 0, 0.8);
+  animation: fadeIn $transition-normal $transition-ease;
+
+  &[data-state="closed"] {
+    animation: fadeOut $transition-normal $transition-ease;
+  }
+}
+
+// ============================================
+// MODAL CONTENT
+// ============================================
+.modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: $z-index-modal;
+  display: grid;
+  width: 100%;
+  max-width: 32rem; // 512px
+  transform: translate(-50%, -50%);
+  gap: $spacing-4;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background);
+  padding: $spacing-6;
+  box-shadow: $shadow-lg;
+  border-radius: $radius-lg;
+  // Use modal-specific animation that includes centering transform
+  animation: modalScaleIn $transition-normal $transition-ease forwards;
+
+  &[data-state="closed"] {
+    animation: modalFadeOut $transition-normal $transition-ease forwards;
+  }
+}
+
+// ============================================
+// MODAL HEADER
+// ============================================
+.modal__header {
+  @include flex-col;
+  gap: $spacing-2;
+  text-align: center;
+
+  @include sm {
+    text-align: left;
+  }
+}
+
+// ============================================
+// MODAL FOOTER
+// ============================================
+.modal__footer {
+  @include flex-col;
+  flex-direction: column-reverse;
+  gap: $spacing-2;
+
+  @include sm {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+// ============================================
+// MODAL TITLE
+// ============================================
+.modal__title {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+}
+
+// ============================================
+// MODAL DESCRIPTION
+// ============================================
+.modal__description {
+  font-size: $font-size-sm;
+  color: var(--color-muted-foreground);
+}
+
+// ============================================
+// MODAL CLOSE BUTTON
+// ============================================
+.modal__close {
+  position: absolute;
+  right: $spacing-4;
+  top: $spacing-4;
+  @include flex-center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: $radius-sm;
+  background: transparent;
+  border: none;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity $transition-fast $transition-ease;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-ring);
+  }
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
