@@ -141,6 +141,13 @@ export const csrfProtection = (
     return next();
   }
 
+  // Skip CSRF for authentication routes (login, register, refresh-token)
+  // These are protected by rate limiting instead
+  const authRoutes = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh-token'];
+  if (authRoutes.includes(req.path)) {
+    return next();
+  }
+
   // Get CSRF token from cookie
   const cookieToken = req.cookies[COOKIE_NAMES.CSRF_TOKEN];
 
