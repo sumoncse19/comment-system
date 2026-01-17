@@ -100,8 +100,11 @@ class AuthController {
       // Set new refresh token cookie
       res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
-      // Send success response (NO tokens in response body)
-      sendSuccess(res, null, 'Token refreshed successfully');
+      // Generate a new CSRF token for the refreshed session
+      const csrfToken = generateSignedCsrfToken();
+
+      // Send success response with new CSRF token
+      sendSuccess(res, { csrfToken }, 'Token refreshed successfully');
     } catch (error) {
       next(error);
     }

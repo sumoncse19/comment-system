@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { clearAuthData } from '../config/security';
-import { getCsrfToken } from '../utils/csrf';
+import { getCsrfToken, setCsrfToken } from '../utils/csrf';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -90,11 +90,16 @@ api.interceptors.response.use(
       try {
         // Try to refresh the token
         // Refresh token is sent automatically via httpOnly cookie
-        await axios.post(
+        const refreshResponse = await axios.post(
           `${API_URL}/auth/refresh-token`,
           {}, // Empty body
           { withCredentials: true } // Send cookies
         );
+
+        // Store the new CSRF token from refresh response
+        if (refreshResponse.data?.data?.csrfToken) {
+          setCsrfToken(refreshResponse.data.data.csrfToken);
+        }
 
         // Notify all waiting requests that refresh is complete
         onTokenRefreshed('refreshed'); // Token value doesn't matter, it's in cookies
