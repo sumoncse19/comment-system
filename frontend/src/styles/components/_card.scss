@@ -34,7 +34,11 @@
 .card__header {
   @include flex-col;
   gap: $spacing-1-5;
-  padding: $spacing-6;
+  padding: $spacing-4; // Mobile
+
+  @include sm {
+    padding: $spacing-6; // Desktop
+  }
 }
 
 .card__title {
@@ -50,8 +54,13 @@
 }
 
 .card__content {
-  padding: $spacing-6;
+  padding: $spacing-4; // Mobile
   padding-top: 0;
+
+  @include sm {
+    padding: $spacing-6; // Desktop
+    padding-top: 0;
+  }
 }
 
 .card__footer {

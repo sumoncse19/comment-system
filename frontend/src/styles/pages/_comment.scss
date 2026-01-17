@@ -78,6 +78,8 @@
 .comment {
   @include card-base;
   padding: $spacing-4;
+  padding-right: $spacing-2;
+  padding-bottom: $spacing-2;
   transition: box-shadow $transition-fast $transition-ease;
 
   &:hover {

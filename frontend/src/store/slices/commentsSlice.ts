@@ -232,7 +232,11 @@ const commentsSlice = createSlice({
     },
     // Update comment from socket (real-time)
     updateCommentFromSocket: (state, action: PayloadAction<Comment>) => {
-      state.comments = updateCommentRecursively(state.comments, action.payload._id, () => action.payload);
+      state.comments = updateCommentRecursively(state.comments, action.payload._id, (existingComment) => ({
+        ...existingComment, // Preserve existing data (especially nested replies)
+        ...action.payload, // Apply updates from socket
+        replies: existingComment.replies, // Always preserve existing replies array
+      }));
     },
     // Delete comment from socket (real-time)
     deleteCommentFromSocket: (state, action: PayloadAction<{ commentId: string; parentId?: string }>) => {

@@ -66,9 +66,14 @@ const CommentItem = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const isOwner = user?._id === comment.author._id;
+  const isOwner = user?._id === comment.author?._id;
   const canReply = depth < 2;
   const hasReplies = comment.replies && comment.replies.length > 0;
+
+  // Safety check - if comment data is incomplete, don't render
+  if (!comment.author) {
+    return null;
+  }
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -100,7 +105,7 @@ const CommentItem = ({
 
   return (
     <Card className={`comment ${depth > 0 ? 'comment--reply' : ''} transition`}>
-      <div className="p-4">
+      <>
         <div className="comment__header">
           <div className="comment__author">
             <div className="avatar avatar--md">
@@ -264,23 +269,25 @@ const CommentItem = ({
             />
           </div>
         )}
-      </div>
+      </>
 
       {/* Render replies */}
       {!isCollapsed && comment.replies && comment.replies.length > 0 && (
-        <div className="comment__replies-list p-4 pt-0">
-          {comment.replies.map((reply) => (
-            <CommentItem
-              key={reply._id}
-              comment={reply}
-              onLike={onLike}
-              onDislike={onDislike}
-              onUpdate={onUpdate}
-              onDelete={onDelete}
-              onReply={onReply}
-              depth={depth + 1}
-            />
-          ))}
+        <div className="comment__replies-list pt-0">
+          {comment.replies
+            .filter((reply) => reply && reply._id) // Filter out invalid replies
+            .map((reply) => (
+              <CommentItem
+                key={reply._id}
+                comment={reply}
+                onLike={onLike}
+                onDislike={onDislike}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+                onReply={onReply}
+                depth={depth + 1}
+              />
+            ))}
         </div>
       )}
     </Card>
