@@ -6,13 +6,20 @@ import { CookieOptions } from 'express';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Check if frontend and backend are on different domains (cross-origin)
+// When cross-origin, we need sameSite: 'none' for cookies to be sent
+const isCrossOrigin = process.env.CROSS_ORIGIN === 'true';
+
+// Determine sameSite value: 'none' for cross-origin (different domains), 'strict' for same-origin
+const sameSiteValue: 'strict' | 'lax' | 'none' = isCrossOrigin ? 'none' : 'strict';
+
 /**
  * Cookie configuration for access token
  */
 export const ACCESS_TOKEN_COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true, // Prevents JavaScript access (XSS protection)
-  secure: isProduction, // HTTPS only in production
-  sameSite: 'strict', // CSRF protection
+  secure: isProduction || isCrossOrigin, // HTTPS required for sameSite: 'none'
+  sameSite: sameSiteValue, // 'none' for cross-origin, 'strict' for same-origin
   maxAge: 15 * 60 * 1000, // 15 minutes (matches JWT expiry)
   path: '/',
 };
@@ -22,8 +29,8 @@ export const ACCESS_TOKEN_COOKIE_OPTIONS: CookieOptions = {
  */
 export const REFRESH_TOKEN_COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true, // Prevents JavaScript access (XSS protection)
-  secure: isProduction, // HTTPS only in production
-  sameSite: 'strict', // CSRF protection
+  secure: isProduction || isCrossOrigin, // HTTPS required for sameSite: 'none'
+  sameSite: sameSiteValue, // 'none' for cross-origin, 'strict' for same-origin
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (matches JWT expiry)
   path: '/api/auth', // Only send to auth endpoints
 };
@@ -34,8 +41,8 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS: CookieOptions = {
  */
 export const CSRF_TOKEN_COOKIE_OPTIONS: CookieOptions = {
   httpOnly: false, // Allow JavaScript to read (needed for double-submit pattern)
-  secure: isProduction, // HTTPS only in production
-  sameSite: 'strict', // CSRF protection
+  secure: isProduction || isCrossOrigin, // HTTPS required for sameSite: 'none'
+  sameSite: sameSiteValue, // 'none' for cross-origin, 'strict' for same-origin
   maxAge: 24 * 60 * 60 * 1000, // 24 hours
   path: '/',
 };
@@ -122,9 +129,13 @@ export const RATE_LIMIT = {
 
 /**
  * CORS configuration
+ * Supports multiple origins (comma-separated in CLIENT_URL env variable)
  */
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+const allowedOrigins = clientUrl.split(',').map((url) => url.trim());
+
 export const CORS_OPTIONS = {
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
   credentials: true, // Allow cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
