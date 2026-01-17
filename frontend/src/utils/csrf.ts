@@ -1,31 +1,37 @@
 /**
  * CSRF Token Utility
  *
- * Handles reading CSRF token from cookies for double-submit pattern
+ * Stores CSRF token in memory (received from login/register response)
+ * This is accessible by axios interceptor for sending with requests
  */
+
+// In-memory storage for CSRF token
+let csrfToken: string | null = null;
 
 /**
- * Get CSRF token from cookie
- * The backend sets this cookie (httpOnly=false so JS can read it)
+ * Set CSRF token (called after login/register)
  */
-export const getCsrfToken = (): string | null => {
-  const name = 'csrf-token=';
-  const decodedCookie = decodeURIComponent(document.cookie);
-  const cookieArray = decodedCookie.split(';');
-
-  for (let i = 0; i < cookieArray.length; i++) {
-    let cookie = cookieArray[i].trim();
-    if (cookie.indexOf(name) === 0) {
-      return cookie.substring(name.length, cookie.length);
-    }
-  }
-
-  return null;
+export const setCsrfToken = (token: string | null): void => {
+  csrfToken = token;
 };
 
 /**
- * Check if CSRF token exists in cookies
+ * Get CSRF token from memory
+ */
+export const getCsrfToken = (): string | null => {
+  return csrfToken;
+};
+
+/**
+ * Clear CSRF token (called on logout)
+ */
+export const clearCsrfToken = (): void => {
+  csrfToken = null;
+};
+
+/**
+ * Check if CSRF token exists
  */
 export const hasCsrfToken = (): boolean => {
-  return getCsrfToken() !== null;
+  return csrfToken !== null;
 };

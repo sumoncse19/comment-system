@@ -45,6 +45,7 @@ export interface AuthResponse {
   user: User;
   accessToken: string;
   refreshToken: string;
+  csrfToken: string;
 }
 
 export interface TokenResponse {

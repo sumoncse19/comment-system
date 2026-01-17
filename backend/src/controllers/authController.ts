@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import authService from '../services/authService';
 import { sendSuccess } from '../utils/helpers';
+import { generateSignedCsrfToken } from '../utils/csrf';
 import { AuthRequest } from '../types';
 import { RegisterInput, LoginInput } from '../validators/authValidator';
 import {
@@ -22,7 +23,10 @@ class AuthController {
       // Set refresh token cookie (httpOnly)
       res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
-      // Send user data (NO tokens in response body for security)
+      // Generate CSRF token for subsequent requests
+      const csrfToken = generateSignedCsrfToken();
+
+      // Send user data with CSRF token
       sendSuccess(
         res,
         {
@@ -33,6 +37,7 @@ class AuthController {
             avatar: user.avatar,
             createdAt: user.createdAt,
           },
+          csrfToken,
         },
         'User registered successfully',
         201
@@ -54,7 +59,10 @@ class AuthController {
       // Set refresh token cookie (httpOnly)
       res.cookie(COOKIE_NAMES.REFRESH_TOKEN, tokens.refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
 
-      // Send user data (NO tokens in response body for security)
+      // Generate CSRF token for subsequent requests
+      const csrfToken = generateSignedCsrfToken();
+
+      // Send user data with CSRF token
       sendSuccess(
         res,
         {
@@ -65,6 +73,7 @@ class AuthController {
             avatar: user.avatar,
             createdAt: user.createdAt,
           },
+          csrfToken,
         },
         'Login successful'
       );

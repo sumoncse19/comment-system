@@ -1,8 +1,8 @@
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { Request, Response, NextFunction } from 'express';
-import { generateSignedCsrfToken, verifyCsrfToken, compareCsrfTokens } from '../utils/csrf';
-import { COOKIE_NAMES, CSRF_TOKEN_COOKIE_OPTIONS, SECURITY_HEADERS } from '../config/security';
+import { verifyCsrfToken } from '../utils/csrf';
+import { SECURITY_HEADERS } from '../config/security';
 import { ApiError } from '../utils/ApiError';
 
 // Helmet middleware for security headers with custom configuration
@@ -105,31 +105,11 @@ export const noSqlInjectionProtection = (
 };
 
 /**
- * CSRF Token Generation Middleware
- * Generates and sets CSRF token cookie for GET requests
- */
-export const csrfTokenGenerator = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  // Only generate token for GET requests or if token doesn't exist
-  if (req.method === 'GET' || !req.cookies[COOKIE_NAMES.CSRF_TOKEN]) {
-    const csrfToken = generateSignedCsrfToken();
-
-    // Set CSRF token cookie (httpOnly=false so JS can read it)
-    res.cookie(COOKIE_NAMES.CSRF_TOKEN, csrfToken, CSRF_TOKEN_COOKIE_OPTIONS);
-
-    // Also send in response header for initial page load
-    res.setHeader('X-CSRF-Token', csrfToken);
-  }
-
-  next();
-};
-
-/**
  * CSRF Protection Middleware
- * Validates CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
+ *
+ * Uses header-based CSRF token validation (works for both same-origin and cross-origin).
+ * Token is returned in login/register response body, stored in frontend memory,
+ * and sent in X-CSRF-Token header for state-changing requests.
  */
 export const csrfProtection = (
   req: Request,
@@ -142,31 +122,22 @@ export const csrfProtection = (
   }
 
   // Skip CSRF for authentication routes (login, register, refresh-token)
-  // These are protected by rate limiting instead
+  // These don't need CSRF as user isn't authenticated yet
   const authRoutes = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh-token'];
   if (authRoutes.includes(req.path)) {
     return next();
   }
 
-  // Get CSRF token from cookie
-  const cookieToken = req.cookies[COOKIE_NAMES.CSRF_TOKEN];
-
   // Get CSRF token from header
   const headerToken = req.headers['x-csrf-token'] as string;
 
-  // Check if both tokens exist
-  if (!cookieToken || !headerToken) {
+  if (!headerToken) {
     return next(ApiError.forbidden('CSRF token missing'));
   }
 
-  // Verify cookie token signature
-  if (!verifyCsrfToken(cookieToken)) {
+  // Verify the token signature
+  if (!verifyCsrfToken(headerToken)) {
     return next(ApiError.forbidden('Invalid CSRF token'));
-  }
-
-  // Compare tokens (double-submit pattern)
-  if (!compareCsrfTokens(cookieToken, headerToken)) {
-    return next(ApiError.forbidden('CSRF token mismatch'));
   }
 
   next();

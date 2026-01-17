@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/tool
 import type { User, LoginCredentials, RegisterCredentials } from '../../types';
 import { authApi } from '../../api/authApi';
 import { STORAGE_KEYS, clearAuthData } from '../../config/security';
+import { setCsrfToken, clearCsrfToken } from '../../utils/csrf';
 import type { AxiosError } from 'axios';
 
 /**
@@ -9,6 +10,7 @@ import type { AxiosError } from 'axios';
  */
 interface AuthState {
   user: User | null;
+  csrfToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -19,6 +21,7 @@ interface AuthState {
  */
 const initialState: AuthState = {
   user: null,
+  csrfToken: null,
   isAuthenticated: false,
   isLoading: true, // Start with true for initial auth check
   error: null,
@@ -53,12 +56,15 @@ export const login = createAsyncThunk(
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
       const response = await authApi.login(credentials);
-      const { user } = response.data;
+      const { user, csrfToken } = response.data;
 
       // Store user data only (tokens are in httpOnly cookies)
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
-      return user;
+      // Store CSRF token in memory for axios interceptor
+      setCsrfToken(csrfToken);
+
+      return { user, csrfToken };
     } catch (err) {
       const error = err as AxiosError<{ error: { message: string } }>;
       const message = error.response?.data?.error?.message || 'Login failed';
@@ -73,12 +79,15 @@ export const register = createAsyncThunk(
   async (credentials: RegisterCredentials, { rejectWithValue }) => {
     try {
       const response = await authApi.register(credentials);
-      const { user } = response.data;
+      const { user, csrfToken } = response.data;
 
       // Store user data only (tokens are in httpOnly cookies)
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 
-      return user;
+      // Store CSRF token in memory for axios interceptor
+      setCsrfToken(csrfToken);
+
+      return { user, csrfToken };
     } catch (err) {
       const error = err as AxiosError<{ error: { message: string; details?: Record<string, string> } }>;
       const message = error.response?.data?.error?.message || 'Registration failed';
@@ -92,11 +101,13 @@ export const logout = createAsyncThunk('auth/logout', async () => {
   try {
     await authApi.logout();
     clearAuthData();
+    clearCsrfToken();
     return null;
   } catch (error) {
     // Log logout errors for debugging but don't block logout
     console.error('Logout API call failed:', error);
     clearAuthData();
+    clearCsrfToken();
     return null;
   }
 });
@@ -145,13 +156,15 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
+        state.user = action.payload.user;
+        state.csrfToken = action.payload.csrfToken;
         state.isAuthenticated = true;
         state.error = null;
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
         state.user = null;
+        state.csrfToken = null;
         state.isAuthenticated = false;
         state.error = action.payload as string;
       });
@@ -164,13 +177,15 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
+        state.user = action.payload.user;
+        state.csrfToken = action.payload.csrfToken;
         state.isAuthenticated = true;
         state.error = null;
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.user = null;
+        state.csrfToken = null;
         state.isAuthenticated = false;
         state.error = action.payload as string;
       });
@@ -183,6 +198,7 @@ const authSlice = createSlice({
       .addCase(logout.fulfilled, (state) => {
         state.isLoading = false;
         state.user = null;
+        state.csrfToken = null;
         state.isAuthenticated = false;
         state.error = null;
       })
@@ -190,6 +206,7 @@ const authSlice = createSlice({
         // Even if logout fails, clear local state
         state.isLoading = false;
         state.user = null;
+        state.csrfToken = null;
         state.isAuthenticated = false;
         state.error = null;
       });
@@ -205,6 +222,7 @@ export default authSlice.reducer;
 // Selectors
 export const selectAuth = (state: { auth: AuthState }) => state.auth;
 export const selectUser = (state: { auth: AuthState }) => state.auth.user;
+export const selectCsrfToken = (state: { auth: AuthState }) => state.auth.csrfToken;
 export const selectIsAuthenticated = (state: { auth: AuthState }) => state.auth.isAuthenticated;
 export const selectAuthLoading = (state: { auth: AuthState }) => state.auth.isLoading;
 export const selectAuthError = (state: { auth: AuthState }) => state.auth.error;

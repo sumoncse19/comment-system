@@ -10,7 +10,6 @@ import {
   apiLimiter,
   xssProtection,
   noSqlInjectionProtection,
-  csrfTokenGenerator,
   csrfProtection,
   additionalSecurityHeaders,
 } from './middleware/security';
@@ -44,10 +43,8 @@ app.use(xssProtection);
 app.use(noSqlInjectionProtection);
 
 // ==================== CSRF Protection ====================
-// Generate CSRF token for GET requests
-app.use(csrfTokenGenerator);
-
 // Validate CSRF token for state-changing requests (POST, PUT, DELETE, PATCH)
+// Token is provided in login/register response and sent via X-CSRF-Token header
 app.use(csrfProtection);
 
 // ==================== Rate Limiting ====================
