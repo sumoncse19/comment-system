@@ -16,6 +16,53 @@ A full-stack MERN (MongoDB, Express.js, React.js, Node.js) comment system with r
 
 > **Note:** The backend is hosted on Render's free tier, which may spin down after periods of inactivity. First request may take 30-60 seconds to wake up the server.
 
+## 🛠️ Quick Start
+
+### Prerequisites
+- Node.js v18+
+- MongoDB Atlas account
+- Git
+
+### Setup
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/sumoncse19/comment-system.git
+cd comment-system
+
+# 2. Backend setup
+cd backend
+npm install
+cp .env.example .env  # Configure your environment variables
+npm run dev
+
+# 3. Frontend setup (in a new terminal)
+cd frontend
+npm install
+cp .env.example .env  # Set VITE_API_URL=http://localhost:5000/api
+npm run dev
+```
+
+### Required Environment Variables
+
+**Backend (.env):**
+```env
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=your-mongodb-uri
+JWT_SECRET=your-64-char-secret
+JWT_REFRESH_SECRET=your-64-char-secret
+CSRF_SECRET=your-64-char-secret
+CLIENT_URL=http://localhost:5173
+```
+
+**Frontend (.env):**
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+> For detailed setup instructions, see [Running Locally](#-running-locally) section below.
+
 ## ✨ Highlights
 
 - 🔐 **Enterprise-Grade Security** - HttpOnly cookies, CSRF protection, comprehensive security headers
