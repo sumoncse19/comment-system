@@ -24,7 +24,7 @@ export const helmetMiddleware = helmet({
   xssFilter: true,
   noSniff: true,
   referrerPolicy: {
-    policy: SECURITY_HEADERS.REFERRER_POLICY as helmet.ReferrerPolicy,
+    policy: SECURITY_HEADERS.REFERRER_POLICY,
   },
 });
 
